@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.order.OrderMapper">
+
+    <!-- 通过主订单号更新订单 -->
+    <update id="updateOrderByMainOrderNo" parameterType="com.aq.facade.dto.order.UpdateOrderDTO">
+        UPDATE aq_strategy_order
+        SET orderState = #{orderState},
+            payType=#{payType},
+            updateTime = SYSDATE()
+        WHERE mainOrderNo=#{mainOrderNo};
+    </update>
+</mapper>

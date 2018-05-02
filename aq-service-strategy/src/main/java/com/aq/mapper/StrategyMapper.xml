@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.StrategyMapper">
+    <resultMap id="boutiqueStrategyQueryVO" type="com.aq.facade.vo.BoutiqueStrategyQueryVO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="collectionId" property="collectionId" jdbcType="INTEGER"/>
+        <result column="publisherPhoto" property="publisherPhoto" jdbcType="VARCHAR"/>
+        <result column="publisherName" property="publisherName" jdbcType="VARCHAR"/>
+        <result column="strategyName" property="strategyName" jdbcType="VARCHAR"/>
+        <result column="strategyDesc" property="strategyDesc" jdbcType="VARCHAR"/>
+        <result column="beginDate" property="beginDate" jdbcType="TIMESTAMP"/>
+        <result column="price" property="price" jdbcType="DECIMAL"/>
+        <result column="purchaseState" property="purchaseState" jdbcType="TINYINT"/>
+        <result column="collectionState" property="collectionState" jdbcType="TINYINT"/>
+        <collection property="strategyPushQueryVOList" column="{purchaseState=purchaseState,id=id}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.StrategyPushQueryVO"
+                    select="listStrategyPushQueryVO"/>
+        <collection property="strategyTradeRecordQueryVOList" column="{id=id}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.StrategyTradeRecordQueryVO"
+                    select="listStrategyTradeRecordQueryVO"/>
+        <collection property="strategyBenchmarkQueryVOList" column="{id=id}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.StrategyBenchmarkQueryVO"
+                    select="listStrategyBenchmarkQueryVO"/>
+    </resultMap>
+
+    <resultMap id="strategyDetailVO" type="com.aq.facade.vo.StrategyDetailVO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="strategyName" property="strategyName" jdbcType="VARCHAR"/>
+        <result column="positionTotalCount" property="positionTotalCount" jdbcType="INTEGER"/>
+        <result column="pushTotalCount" property="pushTotalCount" jdbcType="INTEGER"/>
+        <result column="recommendTotalCount" property="recommendTotalCount" jdbcType="INTEGER"/>
+        <result column="purchaseTotalCount" property="purchaseTotalCount" jdbcType="INTEGER"/>
+        <collection property="strategyTradeRecordQueryVOList" column="{id=id,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.StrategyTradeRecordQueryVO"
+                    select="listStrategyTradeRecordQueryVO"/>
+        <collection property="strategyBenchmarkQueryVOList" column="{id=id,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.StrategyBenchmarkQueryVO"
+                    select="listStrategyBenchmarkQueryVO"/>
+        <collection property="strategyPositionVOList" column="{id=id,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.StrategyPositionVO"
+                    select="listStrategyPositionVO"/>
+        <collection property="strategyPushQueryVOList" column="{purchaseState=purchaseState,id=id,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.StrategyPushQueryVO"
+                    select="listStrategyPushQueryVO"/>
+        <collection property="strategyRecommendVOList" column="{id=id,managerId=managerId,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.StrategyRecommendVO"
+                    select="listStrategyRecommendVO"/>
+        <collection property="strategyPurchaseVOList"
+                    column="{id=id,managerId=managerId,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.StrategyPurchaseVO"
+                    select="listStrategyPurchaseVO"/>
+    </resultMap>
+
+    <select id="listStrategyQueryVO" resultMap="boutiqueStrategyQueryVO"
+            parameterType="com.aq.facade.dto.BoutiqueStrategyQueryDTO">
+        SELECT  aa.* from (SELECT
+        s.id,
+        s.publisherPhoto,
+        s.publisherName,
+        s.strategyName,
+        s.strategyDesc,
+        s.beginDate,
+        sr.pushPrice price,
+        sc.collectionState collectionState,
+        sc.id collectionId,
+        IF (expiryTime > NOW(), 1, 0) purchaseState,
+        expiryTime,
+        sp.id purchaseId
+        FROM
+        aq_strategy s
+        LEFT JOIN aq_strategy_collection sc ON s.id = sc.strategyId and sc.managerId = #{userId}
+        LEFT JOIN aq_strategy_recommend sr ON sr.strategyId = s.id
+        LEFT JOIN aq_strategy_purchase sp ON sp.strategyId = s.id
+        AND sp.purchaserType = #{userRoleCode}
+        AND sp.purchaserId = #{userId}
+        WHERE
+        sr.isDelete = 2
+        <if test="customerId == null">
+            <choose>
+                <when test="recommendState ==null">
+                    AND sr.recommendedId = 0
+                    AND beRecommendedId = #{userId}
+                    AND beRecommendedRoleType = 3
+                </when>
+                <when test="recommendState !=null and recommendState==0">
+                    AND sr.recommendedId = #{userId}
+                </when>
+                <otherwise>
+                    AND sr.recommendedId = 0
+                    AND beRecommendedId = #{userId}
+                    AND beRecommendedRoleType = 3
+                </otherwise>
+            </choose>
+        </if>
+        <if test="customerId != null">
+            AND beRecommendedId = #{customerId}
+            AND beRecommendedRoleType = 2
+        </if>
+        <if test="collectionState != null">
+            AND sc.collectionState = #{collectionState}
+        </if>
+        <choose>
+            <when test="purchaseState !=null and purchaseState == 0">
+                and expiryTime is null
+            </when>
+            <when test="purchaseState !=null and purchaseState == 1">
+                and expiryTime is not null
+            </when>
+        </choose>) aa
+        <choose>
+            <when test="orderByContent==2">
+                left join ( SELECT
+                MIN(aatr.indexTime) minIndexTime,aatr.strategyId
+                FROM
+                aq_strategy_trade_record aatr
+                GROUP BY
+                aatr.strategyId ) bb on aa.id = bb.strategyId
+                <if test='orderType == "asc"'>
+                    order by bb.minIndexTime asc
+                </if>
+                <if test='orderType == "desc" or orderType =="" or orderType == null'>
+                    order by bb.minIndexTime desc
+                </if>
+            </when>
+            <when test="orderByContent==3">
+                left join ( SELECT
+                strr.strategyId,
+                strr.todayRate
+                FROM
+                aq_strategy_trade_record strr
+                WHERE
+                id IN (
+                SELECT
+                MAX(aatr.id)
+                FROM
+                aq_strategy_trade_record aatr
+                GROUP BY
+                aatr.strategyId
+                ) ) bb on aa.id = bb.strategyId
+                <if test= " orderType == 'asc'">
+                    order by bb.todayRate asc
+                </if>
+                <if test= 'orderType == "desc" or orderType =="" or orderType == null'>
+                    order by bb.todayRate desc
+                </if>
+            </when>
+            <when test="orderByContent==4">
+                left join ( SELECT
+                strr.strategyId,
+                strr.cumulativeIncome
+                FROM
+                aq_strategy_trade_record strr
+                WHERE
+                id IN (
+                SELECT
+                MAX(aatr.id)
+                FROM
+                aq_strategy_trade_record aatr
+                GROUP BY
+                aatr.strategyId
+                ) ) bb on aa.id = bb.strategyId
+                <if test="orderType == 'asc'">
+                    order by bb.cumulativeIncome asc
+                </if>
+                <if test="orderType == 'desc' or orderType =='' or orderType == null">
+                    order by bb.cumulativeIncome desc
+                </if>
+            </when>
+            <otherwise>
+                left join ( SELECT
+                strr.strategyId,
+                strr.annualIncome
+                FROM
+                aq_strategy_trade_record strr
+
+                WHERE
+                id IN (
+                SELECT
+                MAX(astr.id)
+                FROM
+                aq_strategy_trade_record astr
+                GROUP BY
+                astr.strategyId
+                )
+                ORDER BY
+                strr.annualIncome DESC ) bb on aa.id = bb.strategyId
+                <if test='orderType =="desc" or orderType =="" or orderType == null'>
+                    order by bb.annualIncome desc
+                </if>
+                <if test ='orderType =="asc"'>
+                    order by bb.annualIncome asc
+                </if>
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="getStrategyDetailVO" parameterType="com.aq.facade.dto.StrategyDetailDTO"
+            resultMap="strategyDetailVO">
+        SELECT
+        s.id,
+        s.strategyName,
+        #{purchaserId} managerId,
+        1 purchaseState,
+        'true' isLimit,
+        (SELECT count(1) from aq_strategy_position where strategyId =1) positionTotalCount,
+        (SELECT count(1) from aq_strategy_push sp where strategyId =1) pushTotalCount,
+        (select count(1) from aq_strategy_recommend where isDelete=2 and recommendedId =#{purchaserId})
+        recommendTotalCount,
+        (SELECT count(1) FROM aq_strategy_purchase sp LEFT JOIN aq_customer_manager cm ON cm.customerId = sp.purchaserId
+        WHERE sp.purchaserType = 2 AND cm.managerId = #{purchaserId}) purchaseTotalCount
+        FROM
+        aq_strategy s
+        where id = #{strategyId}
+        order by s.createTime desc
+    </select>
+
+    <select id="listStrategyTradeRecordQueryVO" resultType="com.aq.facade.vo.StrategyTradeRecordQueryVO"
+            parameterType="java.util.Map">
+        SELECT
+        str.cumulativeIncome,
+        str.annualIncome,
+        str.indexTime,
+        str.maxRetracement,
+        str.returnRetracementRatio,
+        str.strategyPeriod,
+        str.sharpRate,
+        str.totalAssets,
+        str.availableAssets,
+        str.marketValue,
+        str.todayRate,
+        str.numericValue,
+        str.volatility,
+        str.todayRetracement
+        FROM
+        aq_strategy_trade_record str
+        where strategyId =#{id} ORDER BY indexTime asc
+    </select>
+
+    <select id="listStrategyBenchmarkQueryVO" resultType="com.aq.facade.vo.StrategyBenchmarkQueryVO"
+            parameterType="java.util.Map">
+        SELECT
+        sb.type,
+        sb.benchmarkName,
+        sb.benchmarkNumber,
+        sb.source,
+        sb.strategyId
+        FROM
+        aq_strategy_benchmark sb
+        where strategyId =#{id} ORDER BY createTime asc
+    </select>
+
+    <select id="listStrategyPushQueryVO" resultType="com.aq.facade.vo.StrategyPushQueryVO"
+            parameterType="java.util.Map">
+       SELECT
+        sharesName,
+        sharesCode,
+        tradeTime,
+        direction,
+        tradeNumber,
+        tradePrice,
+        tradeTotalPrice
+        from aq_strategy_push sp
+        where strategyId =#{id}
+        and TO_DAYS(NOW()) - TO_DAYS(tradeTime) >= IF (#{purchaseState} = 1, 0, 3) ORDER BY tradeTime desc
+        <if test="isLimit != null">
+            limit 50
+        </if>
+    </select>
+
+    <select id="listStrategyRecommendVO" resultType="com.aq.facade.vo.StrategyRecommendVO"
+            parameterType="java.util.Map">
+        SELECT
+        sr.pushDate,
+        sr.id,
+        sr.pushPrice,
+        c.realName beRecommendedName
+        FROM
+        aq_strategy_recommend sr
+        LEFT JOIN aq_customer c ON c.id = sr.beRecommendedId
+        WHERE
+        isDelete = 2
+        <if test="managerId != null">
+            and sr.recommendedId =#{managerId}
+        </if>
+        and sr.strategyId=#{id}
+        ORDER BY sr.createTime DESC
+        <if test="isLimit != null">
+            limit 20
+        </if>
+    </select>
+
+    <select id="listStrategyPurchaseVO" resultType="com.aq.facade.vo.StrategyPurchaseVO"
+            parameterType="java.util.Map">
+        SELECT
+        sp.expiryTime,
+        spt.createTime,
+        spt.payMoney purchaseMoney,
+        c.telphone purchaserTel
+        FROM
+        aq_strategy_purchase sp
+        LEFT JOIN aq_customer_manager cm ON cm.customerId = sp.purchaserId
+        LEFT JOIN aq_customer c ON c.id = cm.customerId
+        LEFT JOIN aq_strategy_order so ON so.strategyId = sp.strategyId
+        AND so.purchaserType =2
+        AND so.purchaserId = cm.customerId
+        LEFT JOIN aq_strategy_pay_trade spt on spt.orderId = so.id
+        WHERE
+        spt.payState = 1
+        and sp.purchaserType = 2
+        and sp.managerId = #{managerId}
+        <if test="customerId != null">
+            and sp.purchaserId = #{customerId}
+        </if>
+        <if test="managerId != null">
+            and cm.managerId = #{managerId}
+        </if>
+        and sp.strategyId = #{id}
+        ORDER BY sp.createTime DESC
+        <if test="isLimit != null">
+            limit 20
+        </if>
+    </select>
+
+    <select id="listStrategyPositionVO" resultType="com.aq.facade.vo.StrategyPositionVO"
+            parameterType="java.util.Map">
+        SELECT
+        sharesCode,
+        sharesName,
+        holdingNo,
+        referenceCost,
+        referenceProfit
+        FROM
+        aq_strategy_position
+        where strategyId =#{id} AND holdingNo > 0
+        AND holdingTime >= (
+            SELECT
+            DATE_FORMAT(holdingTime, '%Y-%m-%d')
+            FROM
+            aq_strategy_position
+            ORDER BY
+            holdingTime DESC
+            LIMIT 1
+        )
+    </select>
+
+    <select id="listStrategysSelfSupportQueryVO" resultType="com.aq.facade.vo.StrategysSelfSupportQueryVO"
+            parameterType="com.aq.facade.dto.StrategysQueryDTO">
+        SELECT
+        s.id,
+        s.strategyName,
+        s.createTime,
+        s.price,
+        s.fileName,
+        s.publisherName,
+        userName,
+        pu.employeeID employeeID,
+        CASE
+        WHEN sr.beRecommendedRoleType = '2' THEN
+        '客户'
+        WHEN sr.beRecommendedRoleType = '3' THEN
+        '客户经理'
+        ELSE
+        '-'
+        END pushUser
+        FROM
+        aq_strategy s
+        LEFT JOIN aq_permission_user pu on pu.id = s.createId
+        LEFT JOIN aq_strategy_recommend sr on sr.strategyId = s.id and sr.recommendedId=0
+        where 1 = 1
+        <if test="strategyName !=null and strategyName !=''">
+            AND s.strategyName like CONCAT('%', #{strategyName},'%')
+        </if>
+        <if test="employeeID !=null and employeeID !=''">
+            AND pu.employeeID like CONCAT('%', #{employeeID},'%')
+        </if>
+        <if test="endDate !=null and endDate !=''">
+            AND date_format(s.createTime,'%Y-%m-%d') &lt;= #{endDate}
+        </if>
+        <if test="startDate !=null and startDate !=''">
+            AND date_format(s.createTime,'%Y-%m-%d') &gt;= #{startDate}
+        </if>
+        GROUP BY s.id
+        order by s.createTime desc
+    </select>
+
+    <select id="listStrategysPushVO" resultType="com.aq.facade.vo.StrategysPushQueryVO"
+            parameterType="com.aq.facade.dto.StrategysPushQueryDTO">
+        SELECT
+        *,
+        IFNULL((
+        SELECT
+        GROUP_CONCAT(beRecommendedId)
+        FROM
+        aq_strategy_recommend sr
+        WHERE
+        strategyId = #{strategysId}
+        AND beRecommendedRoleType = #{roleType}
+        AND recommendedId = 0
+        ),"") pushIds
+        FROM
+        (
+        SELECT
+        c.realName,
+        c.telphone,
+        c.id,
+        '2' roleType
+        FROM
+        aq_customer c
+        UNION ALL
+        SELECT
+        m.realName,
+        m.telphone,
+        m.id,
+        '3' roleType
+        FROM
+        aq_manager m
+        ) ttt
+        where 1 = 1
+        <if test="telphone !=null and telphone !=''">
+            AND ttt.telphone like CONCAT('%', #{telphone},'%')
+        </if>
+        <if test="realName !=null and realName !=''">
+            AND ttt.realName like CONCAT('%', #{realName},'%')
+        </if>
+        <if test="roleType !=null and roleType !=''">
+            AND ttt.roleType = #{roleType}
+        </if>
+    </select>
+</mapper>

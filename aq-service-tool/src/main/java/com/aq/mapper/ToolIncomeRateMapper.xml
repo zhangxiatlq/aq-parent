@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.ToolIncomeRateMapper">
+
+    <select id="selectToolSpecial" resultType="com.aq.facade.vo.ToolSpecialVO"
+            parameterType="com.aq.facade.dto.ToolSpecialDTO">
+        select toBuyDate,toSellDate,incomeRate from aq_tool_income_rate
+        WHERE bindId = #{bindId}
+        order by toBuyDate desc
+    </select>
+
+</mapper>

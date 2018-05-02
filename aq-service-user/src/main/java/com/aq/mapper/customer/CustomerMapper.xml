@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.customer.CustomerMapper">
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.customer.Customer">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="username" property="username" jdbcType="VARCHAR"/>
+        <result column="telphone" property="telphone" jdbcType="VARCHAR"/>
+        <result column="realName" property="realName" jdbcType="VARCHAR"/>
+        <result column="password" property="password" jdbcType="VARCHAR"/>
+        <result column="isVIP" property="isVIP" jdbcType="TINYINT"/>
+        <result column="endTime" property="endTime" jdbcType="DATE"/>
+        <result column="openId" property="openId" jdbcType="VARCHAR"/>
+        <result column="createrId" property="createrId" jdbcType="INTEGER"/>
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="updateTime" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="updaterId" property="updaterId" jdbcType="INTEGER"/>
+        <result column="loginTime" property="loginTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, username, telphone, realName, password, isVIP, endTime, openId, createrId, createTime,
+        updateTime, updaterId, loginTime
+    </sql>
+
+    <!-- 分页查询客户列表 -->
+    <select id="selectCustomerList" parameterType="com.aq.facade.dto.customer.QueryCustomerDTO"
+            resultType="com.aq.facade.vo.customer.QueryCustomerVO">
+        SELECT
+        2 userType,
+        c.id,
+        cm.createTime,
+        c.username,
+        c.realName,
+        c.telphone,
+        c.openId,
+        IF (c.openId IS NULL ,2, 1) isBind,
+        g.groupName,
+        g.id groupId,
+        (
+        SELECT COUNT(tb.id) FROM aq_tool_bind tb
+        WHERE tb.userId = c.id AND tb.createrId = cm.managerId AND tb.isDelete = 0 AND tb.userType = 2
+        <if test="toolCategoryCode != null and toolCategoryCode != ''">
+            AND tb.toolCategoryCode = #{toolCategoryCode}
+        </if>
+        ) toolNum,
+        (
+        SELECT
+        count(sr.id)
+        FROM
+        aq_strategy_recommend sr
+        WHERE
+        sr.beRecommendedId = c.id
+        AND sr.recommendedId = cm.managerId
+        AND sr.isDelete = 2
+        ) strategyNum,
+        (
+        SELECT
+        count(ar.id)
+        FROM
+        aq_adviser_recommend ar
+        WHERE
+        ar.beRecommendedId = c.id
+        AND ar.recommendedId = cm.managerId
+        AND ar.isDelete = 2
+        ) adviserNum
+        FROM
+        aq_customer_manager cm
+        LEFT JOIN aq_customer c ON cm.customerId = c.id
+        LEFT JOIN aq_group g ON cm.groupId = g.id
+        WHERE
+        cm.managerId = #{managerId}
+        <if test="realName != null and realName != ''">
+            AND c.realName LIKE concat('%',#{realName},'%')
+        </if>
+        <if test="telphone != null and telphone != ''">
+            AND c.telphone LIKE concat('%',#{telphone},'%')
+        </if>
+        <if test="customMessage != null and customMessage != ''">
+            AND (c.telphone LIKE concat('%',#{customMessage},'%')
+            OR c.realName LIKE concat('%',#{customMessage},'%'))
+        </if>
+        <if test="groupId != null">
+            AND g.id = #{groupId}
+        </if>
+        <if test="isQueryBind != null and isQueryBind == 1">
+            AND (c.openId is not null and c.openId != '')
+        </if>
+        <if test="orderByContent !=null">
+            <choose>
+                <when test="orderByContent == 1">
+                    <if test="orderType != null and orderType == 'asc'">
+                        ORDER BY cm.createTime asc
+                    </if>
+                    <if test="orderType != null and orderType == 'desc'">
+                        ORDER BY cm.createTime desc
+                    </if>
+                </when>
+                <when test="orderByContent == 2">
+                    <if test="orderType != null and orderType == 'asc'">
+                        ORDER BY g.groupName asc
+                    </if>
+                    <if test="orderType != null and orderType == 'desc'">
+                        ORDER BY g.groupName desc
+                    </if>
+                </when>
+                <when test="orderByContent == 3">
+                    <if test="orderType != null and orderType == 'asc'">
+                        ORDER BY c.realName asc
+                    </if>
+                    <if test="orderType != null and orderType == 'desc'">
+                        ORDER BY c.realName desc
+                    </if>
+                </when>
+                <when test="orderByContent == 4">
+                    <if test="orderType != null and orderType == 'asc'">
+                        ORDER BY c.telphone asc
+                    </if>
+                    <if test="orderType != null and orderType == 'desc'">
+                        ORDER BY c.telphone desc
+                    </if>
+                </when>
+                <when test="orderByContent == 5">
+                    <if test="orderType != null and orderType == 'asc'">
+                        ORDER BY strategyNum asc
+                    </if>
+                    <if test="orderType != null and orderType == 'desc'">
+                        ORDER BY strategyNum desc
+                    </if>
+                </when>
+                <when test="orderByContent == 6">
+                    <if test="orderType != null and orderType == 'asc'">
+                        ORDER BY toolNum asc
+                    </if>
+                    <if test="orderType != null and orderType == 'desc'">
+                        ORDER BY toolNum desc
+                    </if>
+                </when>
+                <when test="orderByContent == 7">
+                    <if test="orderType != null and orderType == 'asc'">
+                        ORDER BY adviserNum asc
+                    </if>
+                    <if test="orderType != null and orderType == 'desc'">
+                        ORDER BY adviserNum desc
+                    </if>
+                </when>
+                <when test="orderByContent == 8">
+                    <if test="orderType != null and orderType == 'asc'">
+                        ORDER BY isBind asc, cm.createTime desc
+                    </if>
+                    <if test="orderType != null and orderType == 'desc'">
+                        ORDER BY isBind desc, cm.createTime desc
+                    </if>
+                </when>
+            </choose>
+        </if>
+    </select>
+
+
+
+    <!-- 分页查询客户列表 -->
+    <select id="selectCustomerListTool" parameterType="com.aq.facade.dto.customer.QueryCustomerDTO"
+            resultType="com.aq.facade.vo.customer.QueryCustomerVO">
+        SELECT
+        2 userType,
+        c.id,
+        cm.createTime,
+        c.username,
+        c.realName,
+        c.telphone,
+        c.openId,
+        g.groupName,
+        g.id groupId,
+        (
+        SELECT COUNT(tb.id) FROM aq_tool_bind tb
+        WHERE tb.userId = c.id AND tb.isDelete = 0 AND tb.userType = 2
+        <if test="toolCategoryCode != null and toolCategoryCode != ''">
+            AND tb.toolCategoryCode = #{toolCategoryCode}
+        </if>
+        ) toolNum
+        FROM
+        aq_customer_manager cm
+        LEFT JOIN aq_customer c ON cm.customerId = c.id
+        LEFT JOIN aq_group g ON cm.groupId = g.id
+        WHERE
+        cm.managerId = #{managerId}
+        <if test="realName != null and realName != ''">
+            AND c.realName LIKE concat('%',#{realName},'%')
+        </if>
+        <if test="telphone != null and telphone != ''">
+            AND c.telphone LIKE concat('%',#{telphone},'%')
+        </if>
+        <if test="customMessage != null and customMessage != ''">
+            AND (c.telphone LIKE concat('%',#{customMessage},'%')
+            OR c.realName LIKE concat('%',#{customMessage},'%'))
+        </if>
+        <if test="groupId != null">
+            AND g.id = #{groupId}
+        </if>
+        <if test="isQueryBind != null and isQueryBind == 1">
+            AND (c.openId is not null and c.openId != '')
+        </if>
+    </select>
+
+    <!-- 校验客户数据是否唯一 -->
+    <select id="checkCustomerExists" parameterType="com.aq.facade.entity.customer.Customer"
+            resultType="com.aq.facade.entity.customer.Customer">
+        SELECT
+        id,
+        username,
+        telphone,
+        openId,
+        realName,
+        password,
+        isVIP,
+        endTime,
+        loginTime
+        FROM
+        aq_customer
+        WHERE
+        telphone = #{telphone}
+        <if test="username != null and username != ''">
+            or username = #{username}
+        </if>
+        <if test="openId != null and openId != ''">
+            or openId = #{openId}
+        </if>
+    </select>
+    <!-- 根据openId查询客户信息数据 -->
+    <select id="selectCustomerInfoByopenId" resultType="com.aq.facade.vo.customer.CustomerInfoVO">
+		SELECT
+			a.*,
+			b.managerId
+		FROM
+			aq_customer a
+		LEFT JOIN aq_customer_manager b ON a.id = b.customerId
+		where
+			a.openId = #{openId}
+	</select>
+    <!-- 修改vip到期 -->
+    <update id="updateVipExpire">
+		UPDATE aq_customer
+		SET isVIP = 2,
+		 updateTime = now()
+		WHERE
+			endTime &lt; now()
+	</update>
+
+    <!--  查询到期前的vip客户数据 -->
+    <select id="selectExpireTime" resultType="com.aq.facade.entity.customer.Customer">
+		SELECT
+			*
+		FROM
+			aq_customer
+		WHERE
+			isVIP = 1
+		AND endTime &lt; now()
+	</select>
+    <!-- 根据手机号查询用户信息  -->
+    <select id="selectCustomerInfoList" resultType="com.aq.facade.vo.customer.CustomerInfoVO">
+        SELECT
+        c.id,
+        cm.customerId managerId, <!-- 把绑定关系中的客户id 存在 客户经理id 字段中 -->
+        c.realName,
+        c.telphone
+        FROM
+        aq_customer c
+        LEFT JOIN aq_customer_manager cm ON c.id = cm.customerId
+        <where>
+            c.telphone IN
+            <foreach collection="list" item="item" open="(" separator="," close=")">
+                #{item.telphone}
+            </foreach>
+        </where>
+    </select>
+
+
+    <!-- 后台分页获取客户列表信息 -->
+    <select id="getClientListByPage" parameterType="com.aq.facade.dto.SelectClientDTO"
+            resultType="com.aq.facade.vo.ClientListVO">
+        SELECT
+        ac.id AS 'id',
+        ac.username AS 'username',
+        CASE ac.isVIP
+        WHEN 1 THEN
+        'vip'
+        WHEN 2 THEN
+        ''
+        END AS 'vipType',
+        ac.telphone 'telphone',
+        ac.endTime AS 'vipEndTime',
+        ac.realName AS 'clientName',
+        am.realName AS 'mangerName',
+        am.idCode AS 'idCode',
+        ac.createTime AS 'createTime'
+        FROM
+        aq_customer ac
+        LEFT JOIN aq_customer_manager acm ON acm.customerId = ac.id
+        LEFT JOIN aq_manager am ON am.id = acm.managerId
+        LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+        WHERE
+        1 = 1
+        <if test="userName != null and userName != ''">
+            AND ac.username LIKE CONCAT('%', #{userName},'%')
+        </if>
+        <if test="telphone != null and telphone != ''">
+            AND ac.telphone LIKE CONCAT('%', #{telphone},'%')
+        </if>
+        <if test="staffnum != null and staffnum != ''">
+            AND am.idCode LIKE CONCAT('%', #{staffnum},'%')
+        </if>
+        <if test="userId != null and userId != ''">
+            and aum.userId = #{userId}
+        </if>
+        ORDER BY ac.createTime DESC
+    </select>
+
+    <!--获取客户详情信息-->
+    <select id="getClientDetail" parameterType="com.aq.facade.dto.SelectClientDTO"
+            resultType="com.aq.facade.vo.ClientDetailVO">
+        SELECT
+        ac.id AS id,
+        ac.username AS username,
+        ac.telphone AS telphone,
+        am.idCode AS staffnum,
+        ac.realName AS realName,
+        ac.assets AS accout,
+        ac.remark AS remark,
+        am.id AS managerId,
+        am.realName AS managerName
+        FROM
+        aq_customer ac
+        LEFT JOIN aq_customer_manager acm ON acm.customerId = ac.id
+        LEFT JOIN aq_manager am ON am.id = acm.managerId
+        WHERE
+        1 = 1
+        <if test="id != null and id != ''">
+            AND ac.id = #{id}
+        </if>
+    </select>
+    <!-- 修改openId为空 -->
+    <update id="updateOpenIdIsNull" parameterType="java.lang.String">
+    	update aq_customer set openId = null where telphone = #{telphone}
+    </update>
+</mapper>

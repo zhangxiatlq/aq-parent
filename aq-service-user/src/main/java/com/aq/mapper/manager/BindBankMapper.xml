@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.manager.BindBankMapper">
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.manager.BindBank">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="updateTime" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="managerId" property="managerId" jdbcType="INTEGER"/>
+        <result column="cardNo" property="cardNo" jdbcType="VARCHAR"/>
+        <result column="telphone" property="telphone" jdbcType="VARCHAR"/>
+        <result column="ownerName" property="ownerName" jdbcType="VARCHAR"/>
+        <result column="idCardNo" property="idCardNo" jdbcType="VARCHAR"/>
+        <result column="createrId" property="createrId" jdbcType="INTEGER"/>
+        <result column="createIp" property="createIp" jdbcType="VARCHAR"/>
+        <result column="isDelete" property="isDelete" jdbcType="TINYINT"/>
+        <result column="updaterId" property="updaterId" jdbcType="INTEGER"/>
+        <result column="bankCodeNameDataId" property="bankCodeNameDataId" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, createTime, updateTime, managerId, cardNo, telphone, ownerName, idCardNo, createrId, 
+        createIp, isDelete, updaterId, bankCodeNameDataId
+    </sql>
+
+</mapper>

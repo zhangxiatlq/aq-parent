@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.StrategyRecommendMapper">
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.StrategyRecommend">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="strategyId" property="strategyId" jdbcType="INTEGER"/>
+        <result column="recommendedId" property="recommendedId" jdbcType="INTEGER"/>
+        <result column="beRecommendedId" property="beRecommendedId" jdbcType="INTEGER"/>
+        <result column="pushState" property="pushState" jdbcType="TINYINT"/>
+        <result column="pushDate" property="pushDate" jdbcType="TIMESTAMP"/>
+        <result column="pushPrice" property="pushPrice" jdbcType="DECIMAL"/>
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="updateTime" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="isDelete" property="isDelete" jdbcType="TINYINT"/>
+        <result column="isBuy" property="isBuy" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, strategyId, recommendedId, beRecommendedId, pushState, pushDate, pushPrice, createTime, 
+        updateTime, isDelete, isBuy
+    </sql>
+
+    <sql id="11">
+        update strategy_recommend
+        <set>
+            <if test="strategyId != null">
+                strategyId = #{strategyId,jdbcType=INTEGER},
+            </if>
+            <if test="recommendedId != null">
+                recommendedId = #{recommendedId,jdbcType=INTEGER},
+            </if>
+            <if test="beRecommendedId != null">
+                beRecommendedId = #{beRecommendedId,jdbcType=INTEGER},
+            </if>
+            <if test="pushState != null">
+                pushState = #{pushState,jdbcType=TINYINT},
+            </if>
+            <if test="pushDate != null">
+                pushDate = #{pushDate,jdbcType=TIMESTAMP},
+            </if>
+            <if test="pushPrice != null">
+                pushPrice = #{pushPrice,jdbcType=DECIMAL},
+            </if>
+            <if test="createTime != null">
+                createTime = #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="updateTime != null">
+                updateTime = #{updateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="isDelete != null">
+                isDelete = #{isDelete,jdbcType=TINYINT},
+            </if>
+            <if test="isBuy != null">
+                isBuy = #{isBuy,jdbcType=TINYINT},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </sql>
+    
+    <!-- 客户经理推荐策略时获取客户信息列表 -->
+    <select id="getStrategyCustomers" parameterType="com.aq.facade.dto.StrategyCustomListDTO"
+            resultType="com.aq.facade.vo.StrategyCustomListVO">
+      SELECT
+	sr.id,
+    acm.customerId AS customerId ,
+	ag.groupName AS groupName,
+	CONCAT(ac.realName,RIGHT(ac.telphone,4)) AS custom,
+	IF(sr.id is null,1,if(sr.isDelete = 2,0,1)) as strategySent,
+	IF(sr.id is null,1,sr.pushPrice) as pushPrice
+	FROM
+		aq_customer_manager acm
+	LEFT JOIN aq_customer ac ON ac.id = acm.customerId
+	LEFT JOIN aq_group ag ON ag.id = acm.groupId
+	LEFT JOIN aq_manager am ON am.id = acm.managerId
+	LEFT JOIN aq_strategy_recommend sr
+	on sr.beRecommendedId = acm.customerId and sr.strategyId=#{strategyId} and sr.recommendedId=#{managerId}
+	WHERE
+	1 = 1 AND ac.openId != ''
+    <if test="managerId != null and managerId != ''">
+        AND acm.managerId = #{managerId}
+    </if>
+	<if test="groupId != null and groupId != ''">
+        AND ag.id = #{groupId}
+    </if>
+    <if test="customMessage != null and customMessage != ''">
+        AND (ac.realName like CONCAT('%', #{customMessage}, '%')   or ac.telphone like CONCAT('%', #{customMessage}, '%')   )
+    </if>
+
+    </select>
+
+    <!-- 批量更新推荐策略给客户 -->
+    <update id="updateStrategyRecommendBatch" parameterType="java.util.List">
+        update aq_strategy_recommend
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="pushPrice =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    when id=#{item.id}  then #{item.pushPrice}
+                </foreach>
+            </trim>
+            <trim prefix="updateTime =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    when id=#{item.id}  then SYSDATE()
+                </foreach>
+            </trim>
+            <trim prefix="isDelete =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    when id=#{item.id}  then #{item.isDelete}
+                </foreach>
+            </trim>
+        </trim>
+        where id in
+        <foreach collection="list" index="index" item="item" separator="," open="(" close=")">
+            #{item.id,jdbcType=INTEGER}
+        </foreach>
+    </update>
+
+    <insert id="insertStrategyRecommend">
+        INSERT INTO aq_strategy_recommend (
+        strategyId,
+        recommendedId,
+        beRecommendedId,
+        pushState,
+        pushDate,
+        pushPrice,
+        createTime,
+        updateTime,
+        beRecommendedRoleType,
+        isDelete
+        ) SELECT
+        #{strategysId} strategyId,
+        "0" recommendedId,
+        recommended.id beRecommendedId,
+        '0' pushState,
+        NOW() pushDate,
+        #{price} pushPrice,
+        NOW() createTime,
+        NOW() updateTime,
+        #{roleCode} beRecommendedRoleType,
+        "2" isDelete
+        FROM
+        <if test="roleCode == 2">
+            aq_customer recommended
+        </if>
+        <if test="roleCode == 3">
+            aq_manager recommended
+        </if>
+
+    </insert>
+</mapper>

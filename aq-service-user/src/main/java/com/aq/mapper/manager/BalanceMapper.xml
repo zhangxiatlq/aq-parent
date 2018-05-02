@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.manager.BalanceMapper">
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.manager.Balance">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="managerId" property="managerId" jdbcType="INTEGER"/>
+        <result column="money" property="money" jdbcType="DECIMAL"/>
+        <result column="createrId" property="createrId" jdbcType="INTEGER"/>
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="updateTime" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="updaterId" property="updaterId" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, managerId, money, createrId, createTime, updateTime, updaterId
+    </sql>
+
+    <!-- 客户经理余额信息 -->
+    <select id="selectBalanceInfo" parameterType="java.lang.Integer" resultType="com.aq.facade.vo.account.DrawCashVO">
+        SELECT
+            b.money balance,
+            b1.bankcard,
+            b1.realName,
+            b2.bankName,
+            m.payPassword,
+            b1.openingAddress
+        FROM
+            aq_manager m
+        LEFT JOIN aq_balance b ON m.id = b.managerId
+        LEFT JOIN aq_bind_bank b1 ON b.managerId = b1.managerId
+        LEFT JOIN aq_base_bank b2 ON b1.bankBaseId = b2.id
+        WHERE
+            m.id = #{managerId} and b.roleType  = 3
+    </select>
+
+    <!-- 减余额 -->
+    <update id="reduceBalance" parameterType="java.util.Map">
+        UPDATE aq_balance
+        SET money = money - #{balance},
+        updaterId = #{managerId},
+        totalSettlement = totalSettlement + #{balance},
+        updateTime = NOW()
+        WHERE
+            managerId = #{managerId} AND money - #{balance} >=0
+            and roleType = #{roleType}
+    </update>
+
+    <!-- 加余额 -->
+    <update id="increaseBalance" parameterType="java.util.Map">
+        UPDATE aq_balance
+        SET money = money + #{balance},
+        updaterId = #{managerId},
+        totalRevenue = totalRevenue + #{balance},
+        updateTime = NOW()
+        WHERE
+            managerId = #{managerId} and roleType = #{roleType}
+    </update>
+</mapper>

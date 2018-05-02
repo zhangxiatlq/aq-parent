@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.account.DrawcashApplyMapper">
+
+    <!-- 后台分页获取提现申请列表 -->
+    <select id="getDrawcashListByPage" parameterType="com.aq.facade.dto.account.QueryDrawcashDTO"
+            resultType="com.aq.facade.vo.account.DrawcashListVO">
+        SELECT
+          ada.id AS 'id',
+	      am.realName AS 'realName',
+          am.telphone AS 'telphone',
+          ada.price AS 'price',
+	      ada.bankName AS 'bankName',
+	      ada.openingAddress AS 'openingAddress',
+	      ada.bankNo AS 'bankNo',
+	      ada.status AS 'status'
+        FROM
+	    aq_drawcash_apply ada
+	    LEFT JOIN aq_manager am ON am.id = ada.createrId
+        WHERE 1=1
+        <if test="managerMsg != null and managerMsg != ''">
+            AND  (am.telphone LIKE CONCAT('%', #{managerMsg},'%') or am.realName LIKE CONCAT('%', #{managerMsg},'%'))
+        </if>
+        <if test="status != null" >
+            AND  ada.status = #{status}
+        </if>
+    </select>
+
+    <select id="getDrawcashAuthDetail" parameterType="com.aq.facade.dto.account.QueryDrawcashDTO"
+            resultType="com.aq.facade.vo.account.DrawcashAuthDetailVO">
+        SELECT
+	      am.realName AS 'realName',
+          ada.price AS 'price',
+	      ada.authDesc AS 'authDesc'
+        FROM
+	    aq_drawcash_apply ada
+	    LEFT JOIN aq_manager am ON am.id = ada.createrId
+        WHERE 1=1
+        <if test="id != null and id != ''" >
+            AND  ada.id = #{id}
+        </if>
+    </select>
+
+</mapper>

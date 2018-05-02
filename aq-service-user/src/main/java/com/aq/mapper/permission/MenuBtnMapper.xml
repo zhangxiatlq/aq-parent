@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aq.mapper.permission.MenuBtnMapper">
+
+    <!--刪除菜单对应的按钮-->
+    <delete id="deleteBtnByMenuIdAndRoleId">
+        DELETE FROM aq_permission_menu_btn WHERE roleId = #{roleId} and menuId in
+        <foreach collection="menuIds" open="(" item="menuId" separator="," close=")">
+          #{menuId}
+        </foreach>
+    </delete>
+
+    <!--批量新增菜单对应的按钮-->
+    <insert id="insertMenuBtn">
+        INSERT INTO aq_permission_menu_btn (menuId,btnId,roleId) VALUES
+        <foreach collection="btnIds" item="btnId" separator=",">
+            (#{menuId},#{btnId},#{roleId})
+        </foreach>
+    </insert>
+
+    <!--通过菜单id和角色Id查询菜单对应的按钮-->
+    <select id="selectMenuBtnByMenuIdAndRoleId" resultType="com.aq.facade.entity.permission.MenuBtn">
+        select menuId,btnId
+        from aq_permission_menu_btn
+        <where>
+            <if test="menuId != null ">
+                menuId = #{menuId}
+            </if>
+            <if test="roleId != null ">
+                and roleId = #{roleId}
+            </if>
+        </where>
+    </select>
+</mapper>

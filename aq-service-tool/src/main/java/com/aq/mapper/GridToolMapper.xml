@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.GridToolMapper">
+
+	<!-- 查询网格工具列表数据 -->
+	<select id="selectGridTools" parameterType="com.aq.facade.dto.QueryToolDTO" resultType="com.aq.facade.vo.GridToolVO">
+		SELECT
+			a.*,
+			(case b.userType when 2 then CONCAT(c.realName,substring(c.telphone,8,4)) when 3 then CONCAT('我自己',substring(am.telphone,8,4)) end) realName,
+			b.userId,
+			b.id bindId,
+			b.userType
+		FROM
+			aq_grid_tool a
+		LEFT JOIN aq_tool_bind b ON a.id = b.toolId
+		AND a.toolCode = b.toolCategoryCode
+		LEFT JOIN aq_customer c ON b.userId = c.id
+		AND b.userType = 2
+		LEFT JOIN aq_manager am ON b.userId = am.id
+		AND b.userType = 3
+		WHERE
+			a.isDelete = 0
+		AND (
+			b.isDelete IS NULL
+			OR b.isDelete = 0
+		)
+		and	a.managerId = #{managerId}
+		<if test="account != null and account != ''">
+			and (c.telphone = #{account} or c.username = #{account} )
+		</if>
+		order by
+		<if test="sortField == 'createTime'">
+			a.createTime ${orderType}
+		</if>
+		<if test="sortField == 'realName'">
+			c.realName ${orderType}
+		</if>
+		<if test="sortField == 'stockCode'">
+			a.stockCode ${orderType}
+		</if>
+		<if test="sortField == 'stockName'">
+			a.stockName ${orderType}
+		</if>
+		<if test="sortField == 'basePrice'">
+			a.basePrice ${orderType}
+		</if>
+		<if test="sortField == 'differencePrice'">
+			a.differencePrice ${orderType}
+		</if>
+		<if test="sortField == 'entrustNum'">
+			a.entrustNum ${orderType}
+		</if>
+		<if test="sortField == 'upperPrice'">
+			a.upperPrice ${orderType}
+		</if>
+		<if test="sortField == 'lowerPrice'">
+			a.lowerPrice ${orderType}
+		</if>
+		<if test="sortField == 'recommend'">
+			a.status ${orderType}
+		</if>
+	</select>
+	<!-- 批量修改状态 -->
+	<update id="updateByIds">
+		update 
+			aq_grid_tool
+		set 
+			isDelete = #{status},
+			updaterId = #{operId},
+			updateTime = now()
+		where
+			id in
+		 <foreach collection="list" index="index" item="item" open="(" separator="," close=")">
+            #{item}
+         </foreach>  
+	</update>
+	
+	<!-- 查询自己申请的且带确定的绑定ID -->
+	<select id="selectBindByOwnApplyGridIds" resultType="java.lang.Integer">
+		SELECT
+			b.id
+		FROM
+			aq_grid_tool a,
+			aq_tool_bind b
+		WHERE
+			a.id = b.toolId
+		AND b.toolCategoryCode = a.toolCode
+		AND a. STATUS = 0
+		and a.createrType = 2
+		and a.isDelete = 0
+		and b.isDelete = 0
+		and b.toolId in 
+		<foreach collection="list" index="index" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>  
+	</select>
+
+	<!-- 批量查询网格工具是否存在 -->
+	<select id="selectListGridToolsByIds" resultType="java.lang.Integer">
+		select agt.id
+		 from aq_grid_tool agt
+		 WHERE
+		agt.isDelete = 0 AND
+		 agt.id IN
+		<foreach collection="list" index="index" item="item" open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</select>
+</mapper>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <meta charset="UTF-8">
+    <title>AQ智能管理系统</title>
+    <link href="favicon.ico" rel="icon" type="image/x-icon"/>
+    <!--弹窗 css文件-->
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/layer/layer.css}">
+    <!--layui框架CSS-->
+    <link rel="stylesheet" th:href="@{/static/js/layui/css/layui.css}" media="all"/>
+    <!--主要css样式-->
+    <link rel="stylesheet" th:href="@{/static/css/models.css}">
+</head>
+<body>
+<!--首页-->
+<div class="MainBox">
+
+    <input id="userId" type="hidden" th:value="${userId}">
+
+    <!--头部-->
+    <div class="mainTop">
+        <div class="shrinkBtn" title="收缩菜单"></div>
+        <div class="logo left">AQ智能管理系统</div>
+        <div class="userBox right">
+            <div class="userListBox">
+                <em>当前用户：<i><span th:text="${userName}"></span></i></em>
+                <ul class="userList">
+                    <li><a class="ph_modify" href="javascript:void(0);">修改密码</a></li>
+                    <li class="noBorder"><a href="/logout">退出</a></li>
+                </ul>
+            </div>
+            <span>职务：<i><span th:text="${roleName}"></span></i></span>
+        </div>
+    </div>
+    <!--end 头部-->
+
+    <!--左边导航-->
+    <div class="leftNav" id="accordion">
+        <ul class="navBox" id="accordion_a"></ul>
+    </div>
+    <!--end 左边导航-->
+    <!--主体内容-->
+    <div class="mainContentBox" id="admin-body">
+        <div class="layui-tab admin-nav-card layui-tab-brief" lay-filter="admin-tab">
+            <ul class="layui-tab-title">
+                <li class="layui-this">
+                    <cite>管理首页</cite>
+                </li>
+            </ul>
+            <div class="layui-tab-content" style="min-height: 150px; padding: 5px 0 0 0;">
+                <div class="layui-tab-item layui-show">
+                    <iframe class="iframeBox" frameborder="0" src="/welcome"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--end 主体内容-->
+</div>
+<!--end 首页-->
+
+<!--修改密码弹窗-->
+<div class="PopupBox" id="ph_modifyBox">
+    <!--内容-->
+    <div class="PopupCon">
+        <div class="ph_subPoCon">
+            <form class="form-inline" id="updatePswForm">
+                <table class="tableBox">
+                    <tr>
+                        <th><span class="require">*</span>旧密码：</th>
+                        <td><input id="password"
+                                   class="validate[required,minSize[6],maxSize[16]]"
+                                   name="password" type="password"></td>
+                    </tr>
+                    <tr>
+                        <th><span class="require">*</span>新密码：</th>
+                        <td><input id="newPassword"
+                                   class="validate[required,minSize[6],maxSize[16]]"
+                                   name="newPassword" type="password"></td>
+                    </tr>
+                    <tr>
+                        <th><span class="require">*</span>确认新密码：</th>
+                        <td><input id="confirmPassword"
+                                   class="validate[required,equals[newPassword],minSize[6],maxSize[16]]"
+                                   name="confirmPassword" type="password"></td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </div>
+    <!--end 内容-->
+</div>
+<!--end 修改密码弹窗-->
+
+<script type="text/javascript" th:src="@{/static/js/jquery-1.11.1.min.js}"></script>
+<!--验证-->
+<script type="text/javascript" th:src="@{/static/js/validat/jquery.validationEngine-zh_CN.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/validat/jquery.validationEngine.js}"></script>
+<!--弹窗-->
+<script type="text/javascript" th:src="@{/static/js/layer/layer.js}"></script>]
+
+<script type="text/javascript" th:src="@{/static/js/index.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/layui/layui.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/modules/tabnav.js}"></script>
+
+<script type="text/javascript" th:inline="javascript">
+    $(function () {
+        //验证初始化
+        $('#updatePswForm').validationEngine({
+            promptPosition: 'bottomLeft'
+            , autoPositionUpdate: false
+            , addPromptClass: 'formError-text'
+            , autoHidePrompt: true
+            , autoHideDelay: 3000
+            , fadeDuration: 0.3
+        });
+
+        $('.userBox').on('click', '.ph_modify', function () {
+            layer.open({
+                type: 1,
+                title: '修改登录密码',
+                closeBtn: 0,
+                area: ['442px', '320px'],
+                btn: ['确认', '取消'],
+                btnAlign: 'c',
+                content: $('#ph_modifyBox'),
+                btn1: function () {
+                    var flag = $("#updatePswForm").validationEngine("validate");
+                    if (!flag) {
+                        return false;
+                    }
+                    $.ajax({
+                        async: false,
+                        url: "/web/user/admin/updatePsw",
+                        data: $('#updatePswForm').serialize(),
+                        type: "POST",
+                        dataType: "json",
+                        success: function (data) {
+                            if (data.code == '200') {
+                                layer.alert('密码修改成功，将返回登录页面', {
+                                    icon: 1,
+                                    title: '提示',
+                                    closeBtn: 0,
+                                    btnAlign: 'c',
+                                    btn1: function (index) {
+                                        window.location.href = '/logout';
+                                    }
+                                });
+
+                            } else {
+                                $('#password').val('');
+                                $('#newPassword').val('');
+                                $('#confirmPassword').val('');
+                                layer.alert(data.message, {
+                                    icon: 2,
+                                    title: '失败',
+                                    closeBtn: 0,
+                                    btnAlign: 'c'
+                                });
+                            }
+                        },
+                        error: function (data) {
+                            layer.alert("修改密码错误", {
+                                icon: 2,
+                                title: '失败',
+                                closeBtn: 0,
+                                btnAlign: 'c'
+                            });
+                        }
+                    });
+                },
+            });
+        });
+
+        var userId = $("#userId").val();
+        $.ajax({
+            async: false,
+            url: "/web/permission/menu/list",
+            data: {userId: userId},
+            type: "GET",
+            cache: false,
+            dataType: "json",
+            success: function (data) {
+                console.log(data.data);
+                if (data.data) {
+                    MenuTree(data.data);
+                } else {
+                    layer.alert("当前用户无菜单权限", {
+                        icon: 2,
+                        title: '失败',
+                        closeBtn: 0,
+                        btnAlign: 'c'
+                    });
+                }
+            },
+            error: function (data) {
+                layer.alert("菜单加载异常", {
+                    icon: 2,
+                    title: '失败',
+                    closeBtn: 0,
+                    btnAlign: 'c'
+                });
+            }
+        });
+
+
+    });
+
+    //加载树型菜单
+    function MenuTree(data) {
+        var menuTree = '';
+
+        //父级
+        for (var i = 0; i < data.length; i++) {
+            var lis = '';
+            //子级
+            if (data[i].child) {
+                for (var j = 0; j < data[i].child.length; j++) {
+                    lis += '<dd><a href="javascript:void(0);" data-url="' + data[i].child[j].menuUrl + '">' + data[i].child[j].menuName + '</a></dd>';
+                }
+            }
+            menuTree += '<li>'
+                + '<div class="link"><i class="' + data[i].icon + '"></i>' + data[i].menuName + '<i class="navIconRig"></i></div>'
+                + '<dl class="submenu">' + lis + '</dl>'
+                + '</li>';
+        }
+        $("#accordion_a").append(menuTree);
+    }
+
+</script>
+<script type="text/javascript" th:src="@{/static/js/index.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/layui/layui.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/modules/tabnav.js}"></script>
+
+</body>
+</html>

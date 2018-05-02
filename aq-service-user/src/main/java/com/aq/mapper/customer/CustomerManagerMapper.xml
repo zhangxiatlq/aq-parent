@@ -1,0 +1,607 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.customer.CustomerManagerMapper">
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.customer.CustomerManager">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="customerId" property="customerId" jdbcType="INTEGER"/>
+        <result column="managerId" property="managerId" jdbcType="INTEGER"/>
+        <result column="aq_groupId" property="aq_groupId" jdbcType="INTEGER"/>
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, customerId, managerId, aq_groupId, createTime
+    </sql>
+
+    <!-- 总的统计客户各个指标的数据 -->
+    <select id="getCustomerStatisticsStable" resultType="com.aq.facade.vo.statistics.CustomerStatisticsVO">
+        SELECT
+        (
+        SELECT
+        COUNT(1)
+        FROM
+        aq_customer
+        ) AS 'allCustomerNum',
+        (
+        SELECT
+        COUNT(1)
+        FROM
+        aq_customer
+        WHERE
+        createTime >= CONCAT(
+        DATE_FORMAT(NOW(), '%Y-%m-%d'),
+        ' 00:00:00'
+        )
+        ) AS 'todayAddCustomerNum',
+        (
+        SELECT
+        COUNT(1)
+        FROM
+        aq_customer
+        WHERE
+        createTime >= CONCAT(
+        date_sub(
+        curdate(),
+        INTERVAL WEEKDAY(curdate()) DAY
+        ),
+        ' 00:00:00'
+        )
+        ) AS 'weekAddCustomerNum',
+        (
+        SELECT
+        COUNT(1)
+        FROM
+        aq_customer
+        WHERE
+        createTime >= concat(
+        date_format(LAST_DAY(now()), '%Y-%m-'),
+        '01',
+        ' 00:00:00'
+        )
+        ) AS 'monthAddCustomerNum',
+        (
+        SELECT
+        COUNT(1)
+        FROM
+        aq_customer
+        WHERE
+        isVIP = 1
+        ) AS 'allCustomerNumVIP',
+        (
+        SELECT
+        COUNT(1)
+        FROM
+        (SELECT
+	    MIN(avo.id),avo.createTime,ac.realName
+        FROM
+	      aq_customer ac
+        INNER JOIN aq_vip_order avo ON avo.customerId = ac.id
+        WHERE ac.isVIP = 1
+        GROUP BY ac.realName) tt
+        WHERE
+        tt.createTime >= CONCAT(
+        DATE_FORMAT(NOW(), '%Y-%m-%d'),
+        ' 00:00:00'
+        )
+        ) AS 'todayAddCustomerNumVIP',
+        (
+        SELECT
+        COUNT(1)
+        FROM
+        (SELECT
+	    MIN(avo.id),avo.createTime,ac.realName
+          FROM
+	      aq_customer ac
+        INNER JOIN aq_vip_order avo ON avo.customerId = ac.id
+        WHERE ac.isVIP = 1
+        GROUP BY ac.realName) tt
+        WHERE
+        tt.createTime >= CONCAT(
+        date_sub(
+        curdate(),
+        INTERVAL WEEKDAY(curdate()) DAY
+        ),
+        ' 00:00:00'
+        )
+        ) AS 'weekAddCustomerNumVIP',
+        (
+        SELECT
+        COUNT(1)
+        FROM
+        (SELECT
+	      MIN(avo.id),avo.createTime,ac.realName
+          FROM
+	      aq_customer ac
+          INNER JOIN aq_vip_order avo ON avo.customerId = ac.id
+          WHERE ac.isVIP = 1
+        GROUP BY ac.realName) tt
+        WHERE
+        tt.createTime >= concat(
+        date_format(LAST_DAY(now()), '%Y-%m-'),
+        '01',
+        ' 00:00:00'
+        )
+        ) AS 'monthAddCustomerNumVIP',
+				(SELECT COUNT(1) from aq_manager) AS 'allManagerNum',
+				(SELECT COUNT(1) from aq_manager where createTime >= CONCAT(
+        DATE_FORMAT(NOW(), '%Y-%m-%d'),
+        ' 00:00:00'
+        )) AS 'todayAddManagerNum',
+				(SELECT COUNT(1) from aq_manager where createTime>= CONCAT(
+        date_sub(
+        curdate(),
+        INTERVAL WEEKDAY(curdate()) DAY
+        ),
+        ' 00:00:00'
+        )) AS 'weekAddManagerNum',
+				(SELECT COUNT(1) from aq_manager where createTime>=concat(
+        date_format(LAST_DAY(now()), '%Y-%m-'),
+        '01',
+        ' 00:00:00'
+        )) AS 'monthAddMangerNum',
+				(SELECT COUNT(DISTINCT tt.openId) from
+(SELECT am.openId from aq_manager am where am.openId IS NOT NULL AND am.openId != '' AND am.isCancelAttention =2
+UNION
+SELECT ac.openId from aq_customer ac where ac.openId IS NOT NULL AND ac.openId != '' AND ac.isCancelAttention =2) tt) AS 'allWechaterNum',
+				(SELECT COUNT(DISTINCT tt.openId) from
+(SELECT am.openId from aq_manager am where am.openId IS NOT NULL AND am.openId != '' AND am.isCancelAttention =2 AND am.createAttentionTime>=CONCAT(
+        DATE_FORMAT(NOW(), '%Y-%m-%d'),
+        ' 00:00:00'
+        )
+UNION
+SELECT ac.openId from aq_customer ac where ac.openId IS NOT NULL AND ac.openId != '' AND ac.isCancelAttention =2 AND ac.createAttentionTime>=CONCAT(
+        DATE_FORMAT(NOW(), '%Y-%m-%d'),
+        ' 00:00:00'
+        )) tt) AS 'todayAddWechaterNum',
+
+				(SELECT COUNT(DISTINCT tt.openId) from
+(SELECT am.openId from aq_manager am where am.openId IS NOT NULL AND am.openId != '' AND am.isCancelAttention =2 AND am.createAttentionTime>=CONCAT(
+        date_sub(
+        curdate(),
+        INTERVAL WEEKDAY(curdate()) DAY
+        ),
+        ' 00:00:00'
+        )
+UNION
+SELECT ac.openId from aq_customer ac where ac.openId IS NOT NULL AND ac.openId != '' AND ac.isCancelAttention =2 AND ac.createAttentionTime>=CONCAT(
+        date_sub(
+        curdate(),
+        INTERVAL WEEKDAY(curdate()) DAY
+        ),
+        ' 00:00:00'
+        )) tt) AS 'weekAddWechaterNum',
+				(SELECT COUNT(DISTINCT tt.openId) from
+(SELECT am.openId from aq_manager am where am.openId IS NOT NULL AND am.openId != '' AND am.isCancelAttention =2 AND am.createAttentionTime>=concat(
+        date_format(LAST_DAY(now()), '%Y-%m-'),
+        '01',
+        ' 00:00:00'
+        )
+UNION
+SELECT ac.openId from aq_customer ac where ac.openId IS NOT NULL AND ac.openId != '' AND ac.isCancelAttention =2 AND ac.createAttentionTime>=concat(
+        date_format(LAST_DAY(now()), '%Y-%m-'),
+        '01',
+        ' 00:00:00'
+        )) tt) AS 'monthAddWechaterNum'
+    </select>
+
+    <!-- 统计每个客户下面的客户各项指标 -->
+    <select id="getCustomerStatisticsOfManagerList" parameterType="com.aq.facade.dto.manage.SelectManagerDTO"
+            resultType="com.aq.facade.vo.statistics.CustomerStatisticsPreManagerListVO">
+
+        SELECT tt.* ,tt.addAttentionNum-tt.cancelAttentionNum AS 'attentionChangeNum' from (SELECT
+        am.id,
+        am.telphone,
+        am.realName,
+        IF(am.isEmployee IS NULL OR am.isEmployee='',2,1) AS isEmployee,
+        CASE
+        WHEN am.isEmployee = 2 OR am.isEmployee IS NULL OR am.isEmployee =''
+        THEN
+        am.idCode
+        ELSE
+        (SELECT apu.employeeID from aq_permission_user apu,aq_user_manager aum WHERE aum.userId = apu.id AND aum.managerId = am.id)
+        END AS idCode,
+
+        CASE
+        WHEN am.isEmployee = 2 OR am.isEmployee IS NULL OR am.isEmployee =''
+        THEN
+        0
+        ELSE
+        (
+        SELECT COUNT(1) from aq_manager amt,aq_user_manager aumt
+        where aumt.userId = (SELECT apu.id from aq_permission_user apu,aq_user_manager aum WHERE aum.userId = apu.id AND aum.managerId = am.id)
+        AND aumt.managerId = amt.id AND amt.createTime >=CONCAT(
+        DATE_FORMAT(NOW(), '%Y-%m-%d'),
+        ' 00:00:00'
+        )
+        ) END AS addManagerNum,
+
+        CASE
+        WHEN am.isEmployee = 2 OR am.isEmployee IS NULL OR am.isEmployee =''
+        THEN
+        0
+        ELSE
+        (
+        SELECT COUNT(1) from aq_manager amt,aq_user_manager aumt
+        where aumt.userId = (SELECT apu.id from aq_permission_user apu,aq_user_manager aum WHERE aum.userId = apu.id AND aum.managerId = am.id)
+        AND aumt.managerId = amt.id
+        ) END AS allManagerNum,
+
+        COUNT(CASE WHEN ac.id IS NULL OR ac.id ='' THEN NULL ELSE 1 END) AS cumstomerNum,
+        COUNT(CASE WHEN ac.createTime >= CONCAT(
+        DATE_FORMAT(NOW(), '%Y-%m-%d'),
+        ' 00:00:00'
+        ) THEN 1 ELSE NULL END) AS addCustomerNum,
+        COUNT(
+        CASE
+        WHEN ac.isVIP = 1
+        AND ac.isVIP != 2 THEN
+        1
+        ELSE
+        NULL
+        END
+        ) AS vipNum,
+        COUNT(CASE WHEN dd.id is NOT NULL OR dd.id !='' THEN 1 ELSE NULL END) AS addVIPNum,
+
+
+
+        COUNT(
+        CASE
+        WHEN  ac.openId != '' AND ac.isCancelAttention=2 THEN
+        1
+        ELSE
+        NULL
+        END
+        ) AS openNum,
+        COUNT(
+        CASE
+        WHEN ac.openId = '' or ac.isCancelAttention=1 THEN
+        1
+        ELSE
+        NULL
+        END
+        ) AS cancelOpenNum,
+        COUNT(
+        CASE
+        WHEN ac.createAttentionTime >= CONCAT(DATE_SUB(curdate(),INTERVAL 0 DAY),' 00:00:00') THEN 1 ELSE NULL END
+        ) AS addAttentionNum,
+        COUNT(
+        CASE
+        WHEN ac.cancelAttentionTime >= CONCAT(DATE_SUB(curdate(),INTERVAL 0 DAY),' 00:00:00') THEN 1 ELSE NULL END
+        ) AS cancelAttentionNum,
+        am.createTime
+        FROM
+        aq_manager am
+        LEFT JOIN aq_customer_manager acm ON acm.managerId = am.id
+        LEFT JOIN aq_customer ac ON ac.id = acm.customerId
+        LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+        LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        LEFT JOIN ( SELECT * from (SELECT
+        MIN(avo.id),avo.createTime,acc.realName,acc.id
+        FROM
+        aq_customer acc
+        INNER JOIN aq_vip_order avo ON avo.customerId = acc.id
+        WHERE acc.isVIP = 1
+        GROUP BY acc.realName) ttt
+        WHERE ttt.createTime>=CONCAT(DATE_SUB(curdate(),INTERVAL 0 DAY),' 00:00:00')) dd ON dd.id = ac.id
+        WHERE 1=1
+        <if test="content != null and content != ''">
+            AND (am.realName LIKE concat('%',#{content},'%') OR am.telphone LIKE concat('%',#{content},'%'))
+        </if>
+        <if test="userId != null and userId != ''">
+            and apu.id = #{userId}
+        </if>
+        GROUP BY
+        am.telphone) tt
+        order by tt.isEmployee asc, tt.createTime DESC
+    </select>
+    
+    <!-- 我的用户 整体统计各个指标数量 -->
+    <select id="getStatisticsByUser" parameterType="com.aq.facade.dto.manage.SelectManagerDTO"
+            resultType="com.aq.facade.vo.statistics.CustomerStatisticsVO">
+          SELECT
+        (
+        SELECT
+        COUNT(1)
+        FROM
+        aq_customer ac
+				LEFT JOIN aq_customer_manager acm ON acm.customerId = ac.id
+				LEFT JOIN aq_manager am ON am.id = acm.managerId
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+				WHERE apu.id = #{userId}
+        ) AS 'allCustomerNum',
+        (
+        SELECT
+        COUNT(1)
+        FROM
+        aq_customer ac
+				LEFT JOIN aq_customer_manager acm ON acm.customerId = ac.id
+				LEFT JOIN aq_manager am ON am.id = acm.managerId
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND
+        ac.createTime >= CONCAT(
+        DATE_FORMAT(NOW(), '%Y-%m-%d'),
+        ' 00:00:00'
+        )
+        ) AS 'todayAddCustomerNum',
+        (
+        SELECT
+        COUNT(1)
+        FROM
+        aq_customer ac
+				LEFT JOIN aq_customer_manager acm ON acm.customerId = ac.id
+				LEFT JOIN aq_manager am ON am.id = acm.managerId
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND
+        ac.createTime >= CONCAT(
+        date_sub(
+        curdate(),
+        INTERVAL WEEKDAY(curdate()) DAY
+        ),
+        ' 00:00:00'
+        )
+        ) AS 'weekAddCustomerNum',
+        (
+        SELECT
+        COUNT(1)
+        FROM
+        aq_customer ac
+				LEFT JOIN aq_customer_manager acm ON acm.customerId = ac.id
+				LEFT JOIN aq_manager am ON am.id = acm.managerId
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND
+        ac.createTime >= concat(
+        date_format(LAST_DAY(now()), '%Y-%m-'),
+        '01',
+        ' 00:00:00'
+        )
+        ) AS 'monthAddCustomerNum',
+        (
+        SELECT
+        COUNT(1)
+        FROM
+        aq_customer ac
+				LEFT JOIN aq_customer_manager acm ON acm.customerId = ac.id
+				LEFT JOIN aq_manager am ON am.id = acm.managerId
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND
+        ac.isVIP = 1
+        ) AS 'allCustomerNumVIP',
+        (
+        SELECT
+        COUNT(1)
+        FROM
+        (SELECT
+	    MIN(avo.id),avo.createTime,ac.realName,ac.id
+        FROM
+	      aq_customer ac
+        INNER JOIN aq_vip_order avo ON avo.customerId = ac.id
+        WHERE ac.isVIP = 1
+        GROUP BY ac.realName) tt
+				LEFT JOIN aq_customer_manager acm ON acm.customerId = tt.id
+				LEFT JOIN aq_manager am ON am.id = acm.managerId
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND
+        tt.createTime >= CONCAT(
+        DATE_FORMAT(NOW(), '%Y-%m-%d'),
+        ' 00:00:00'
+        )
+        ) AS 'todayAddCustomerNumVIP',
+        (
+        SELECT
+        COUNT(1)
+        FROM
+        (SELECT
+	    MIN(avo.id),avo.createTime,ac.realName,ac.id
+          FROM
+	      aq_customer ac
+        INNER JOIN aq_vip_order avo ON avo.customerId = ac.id
+        WHERE ac.isVIP = 1
+        GROUP BY ac.realName) tt
+        LEFT JOIN aq_customer_manager acm ON acm.customerId = tt.id
+				LEFT JOIN aq_manager am ON am.id = acm.managerId
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND
+        tt.createTime >= CONCAT(
+        date_sub(
+        curdate(),
+        INTERVAL WEEKDAY(curdate()) DAY
+        ),
+        ' 00:00:00'
+        )
+        ) AS 'weekAddCustomerNumVIP',
+        (
+        SELECT
+        COUNT(1)
+        FROM
+        (SELECT
+	      MIN(avo.id),avo.createTime,ac.realName,ac.id
+          FROM
+	      aq_customer ac
+          INNER JOIN aq_vip_order avo ON avo.customerId = ac.id
+          WHERE ac.isVIP = 1
+        GROUP BY ac.realName) tt
+        LEFT JOIN aq_customer_manager acm ON acm.customerId = tt.id
+				LEFT JOIN aq_manager am ON am.id = acm.managerId
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND
+        tt.createTime >= concat(
+        date_format(LAST_DAY(now()), '%Y-%m-'),
+        '01',
+        ' 00:00:00'
+        )
+        ) AS 'monthAddCustomerNumVIP',
+				(SELECT COUNT(1) from aq_manager am
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId}
+					) AS 'allManagerNum',
+				(SELECT COUNT(1) from aq_manager am
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND am.createTime >= CONCAT(
+        DATE_FORMAT(NOW(), '%Y-%m-%d'),
+        ' 00:00:00'
+        )) AS 'todayAddManagerNum',
+				(SELECT COUNT(1) from aq_manager am
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND am.createTime>= CONCAT(
+        date_sub(
+        curdate(),
+        INTERVAL WEEKDAY(curdate()) DAY
+        ),
+        ' 00:00:00'
+        )) AS 'weekAddManagerNum',
+				(SELECT COUNT(1) from aq_manager am
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND am.createTime>=concat(
+        date_format(LAST_DAY(now()), '%Y-%m-'),
+        '01',
+        ' 00:00:00'
+        )) AS 'monthAddMangerNum',
+				(SELECT COUNT(DISTINCT tt.openId) from
+(SELECT am.openId from aq_manager am
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND am.openId IS NOT NULL AND am.openId != '' AND am.isCancelAttention =2
+UNION
+SELECT ac.openId from aq_customer ac
+				LEFT JOIN aq_customer_manager acm ON acm.customerId = ac.id
+				LEFT JOIN aq_manager am ON am.id = acm.managerId
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND ac.openId IS NOT NULL AND ac.openId != '' AND ac.isCancelAttention =2) tt) AS 'allWechaterNum',
+				(SELECT COUNT(DISTINCT tt.openId) from
+		(SELECT am.openId from aq_manager am
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND am.openId IS NOT NULL AND am.openId != '' AND am.isCancelAttention =2 AND am.createAttentionTime>=CONCAT(
+        DATE_FORMAT(NOW(), '%Y-%m-%d'),
+        ' 00:00:00'
+        )
+UNION
+SELECT ac.openId from aq_customer ac
+				LEFT JOIN aq_customer_manager acm ON acm.customerId = ac.id
+				LEFT JOIN aq_manager am ON am.id = acm.managerId
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND ac.openId IS NOT NULL AND ac.openId != '' AND ac.isCancelAttention =2 AND ac.createAttentionTime>=CONCAT(
+        DATE_FORMAT(NOW(), '%Y-%m-%d'),
+        ' 00:00:00'
+        )) tt) AS 'todayAddWechaterNum',
+
+				(SELECT COUNT(DISTINCT tt.openId) from
+(SELECT am.openId from aq_manager am
+LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND am.openId IS NOT NULL AND am.openId != '' AND am.isCancelAttention =2 AND am.createAttentionTime>=CONCAT(
+        date_sub(
+        curdate(),
+        INTERVAL WEEKDAY(curdate()) DAY
+        ),
+        ' 00:00:00'
+        )
+UNION
+SELECT ac.openId from aq_customer ac
+				LEFT JOIN aq_customer_manager acm ON acm.customerId = ac.id
+				LEFT JOIN aq_manager am ON am.id = acm.managerId
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND ac.openId IS NOT NULL AND ac.openId != '' AND ac.isCancelAttention =2 AND ac.createAttentionTime>=CONCAT(
+        date_sub(
+        curdate(),
+        INTERVAL WEEKDAY(curdate()) DAY
+        ),
+        ' 00:00:00'
+        )) tt) AS 'weekAddWechaterNum',
+				(SELECT COUNT(DISTINCT tt.openId) from
+(SELECT am.openId from aq_manager am
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND am.openId IS NOT NULL AND am.openId != '' AND am.isCancelAttention =2 AND am.createAttentionTime>=concat(
+        date_format(LAST_DAY(now()), '%Y-%m-'),
+        '01',
+        ' 00:00:00'
+        )
+UNION
+SELECT ac.openId from aq_customer ac
+				LEFT JOIN aq_customer_manager acm ON acm.customerId = ac.id
+				LEFT JOIN aq_manager am ON am.id = acm.managerId
+				LEFT JOIN aq_user_manager aum ON aum.managerId = am.id
+				LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+        WHERE apu.id = #{userId} AND ac.openId IS NOT NULL AND ac.openId != '' AND ac.isCancelAttention =2 AND ac.createAttentionTime>=concat(
+        date_format(LAST_DAY(now()), '%Y-%m-'),
+        '01',
+        ' 00:00:00'
+        )) tt) AS 'monthAddWechaterNum'
+    </select>
+
+
+    <!-- 通过openid比对更新取消关注 -->
+    <update id="cancelAttentionUpdate">
+          UPDATE aq_customer
+          SET cancelAttentionTime = SYSDATE(),
+           isCancelAttention = 1
+          WHERE
+          	openId != '' AND isCancelAttention = 2
+          AND openId NOT IN (
+          	SELECT
+          		openId
+          	FROM
+          		aq_attention_wechat_record
+          	WHERE
+          		createTime >= CONCAT(
+          			DATE_FORMAT(NOW(), '%Y-%m-%d'),
+          			' 00:00:00'
+          		)
+          )
+    </update>
+    <!-- 通过openid比对更新再次关注或者新添加关注 -->
+    <update id="againAttentionUpdate">
+        UPDATE aq_customer
+        SET isCancelAttention = 2,
+         createAttentionTime = SYSDATE()
+        WHERE
+        	(isCancelAttention = 1 OR isCancelAttention is NULL)
+        AND openId != ''
+        AND openId IN (
+        	SELECT
+        		openId
+        	FROM
+        		aq_attention_wechat_record
+        	WHERE
+        		createTime >= CONCAT(
+        			DATE_FORMAT(NOW(), '%Y-%m-%d'),
+        			' 00:00:00'
+        		)
+        )
+    </update>
+
+
+    <!--根据客户id 获取平台、客户经理的分成比例-->
+    <select id="selectDivideScale" parameterType="java.lang.Integer"
+            resultType="com.aq.facade.vo.customer.DivideScaleVO">
+        SELECT
+            m.managerDivideScale,
+            pu.divideScale,
+            m.id managerId,
+            pu.id userId
+        FROM
+            aq_customer_manager cm
+        LEFT JOIN aq_manager m ON cm.managerId = m.id
+        LEFT JOIN aq_user_manager um ON m.id = um.managerId
+        LEFT JOIN aq_permission_user pu ON um.userId = pu.id AND pu.isDelete = 2
+        WHERE
+            cm.customerId = #{customerId}
+    </select>
+</mapper>

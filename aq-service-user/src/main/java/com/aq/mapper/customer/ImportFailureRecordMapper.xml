@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.customer.ImportFailureRecordMapper">
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.customer.ImportFailureRecord">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="groupName" property="groupName" jdbcType="VARCHAR"/>
+        <result column="username" property="username" jdbcType="VARCHAR"/>
+        <result column="realName" property="realName" jdbcType="VARCHAR"/>
+        <result column="telphone" property="telphone" jdbcType="VARCHAR"/>
+        <result column="reason" property="reason" jdbcType="VARCHAR"/>
+        <result column="createrId" property="createrId" jdbcType="INTEGER"/>
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, groupName, realName, username, telphone, reason, createrId, createTime
+    </sql>
+
+    <select id="selectRecordByList" resultType="com.aq.facade.vo.customer.ImportFailureRecordVO" parameterType="java.lang.Integer">
+        select
+        <include refid="Base_Column_List"/>
+        from aq_import_failure_record
+        where createrId = #{managerId}
+        ORDER BY createTime DESC
+    </select>
+</mapper>

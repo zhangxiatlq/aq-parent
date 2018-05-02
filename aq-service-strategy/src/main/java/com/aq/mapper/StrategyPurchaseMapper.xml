@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.StrategyPurchaseMapper">
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.StrategyPurchase">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="recommendId" property="recommendId" jdbcType="INTEGER"/>
+        <result column="expiryTime" property="expiryTime" jdbcType="TIMESTAMP"/>
+        <result column="purchaserId" property="purchaserId" jdbcType="INTEGER"/>
+        <result column="purchaserType" property="purchaserType" jdbcType="TINYINT"/>
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="updateTime" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="purchasePrice" property="purchasePrice" jdbcType="DECIMAL"/>
+        <result column="purchaseMoney" property="purchaseMoney" jdbcType="DECIMAL"/>
+    </resultMap>
+
+    <select id="listStrategyPurchaseVO" parameterType="com.aq.facade.dto.StrategyPurchaseDTO"
+            resultType="com.aq.facade.vo.StrategyPurchaseVO">
+        SELECT
+        sp.expiryTime,
+        sp.createTime,
+        <if test="purchaserType != null">
+            CONCAT(SUBSTR(purchaser.telphone,1,3),"***",SUBSTR(purchaser.telphone,9,3)) purchaserTel
+        </if>
+        FROM
+        aq_strategy_purchase sp
+        <if test="purchaserType == 3">
+            LEFT JOIN aq_manager purchaser on purchaser.id = sp.purchaserId
+        </if>
+        <if test="purchaserType == 2">
+            LEFT JOIN aq_customer purchaser on purchaser.id = sp.purchaserId
+        </if>
+        WHERE
+        1=1
+        <if test="purchaserId != null">
+            and sp.purchaserId = #{purchaserId,jdbcType=INTEGER}
+        </if>
+        <if test="strategyId != null">
+            and sp.strategyId=#{strategyId,jdbcType=INTEGER}
+        </if>
+        <if test="purchaserType != null">
+            and sp.purchaserType=#{purchaserType}
+        </if>
+        order by sp.createTime desc
+    </select>
+
+    <!-- 批量更新购买了的策略续费 -->
+    <update id="updateRenewStrategyPurchase" parameterType="java.util.List">
+        UPDATE aq_strategy_purchase asp
+        SET asp.expiryTime =
+        <foreach collection="list" item="item" index="index"
+                 separator=" " open="case " close="end">
+            when asp.strategyId=#{item.strategyId} and asp.purchaserId=#{item.purchaserId} and asp.purchaserType=#{item.purchaserType} and DATEDIFF(asp.expiryTime , SYSDATE()) >= 0 then (DATE_ADD(
+            asp.expiryTime,
+            INTERVAL 1 MONTH
+            ))
+            when asp.strategyId=#{item.strategyId} and asp.purchaserId=#{item.purchaserId} and asp.purchaserType=#{item.purchaserType} and DATEDIFF(asp.expiryTime , SYSDATE()) &lt; 0 then (DATE_ADD(
+            SYSDATE(),
+            INTERVAL 1 MONTH
+            ))
+        </foreach>
+        WHERE
+        <foreach collection="list" separator="or" item="item" index="index" >
+            (asp.strategyId=#{item.strategyId} and asp.purchaserId=#{item.purchaserId} and asp.purchaserType=#{item.purchaserType})
+        </foreach>
+    </update>
+</mapper>

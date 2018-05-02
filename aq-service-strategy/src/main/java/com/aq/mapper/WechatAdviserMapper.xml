@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.WechatAdviserMapper">
+
+    <resultMap id="adviserWechatDetailVO" type="com.aq.facade.vo.AdviserWechatDetailVO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="adviserName" property="adviserName" jdbcType="VARCHAR"/>
+        <result column="adviserDesc" property="adviserDesc" jdbcType="VARCHAR"/>
+        <collection property="adviserTradeRecordQueryVOList" column="{id=id,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.AdviserTradeRecordQueryVO"
+                    select="com.aq.mapper.AdviserMapper.listAdviserTradeRecordQueryVO"/>
+        <collection property="adviserPositionVOList" column="{id=id,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.AdviserPositionVO"
+                    select="com.aq.mapper.AdviserMapper.listAdviserPositionVO"/>
+        <collection property="adviserPushQueryVOList" column="{purchaseState=purchaseState,id=id,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.AdviserPushQueryVO"
+                    select="com.aq.mapper.AdviserMapper.listAdviserPushQueryVO"/>
+    </resultMap>
+
+
+    <select id="selectAdviserPushIds" parameterType="java.lang.Integer"
+            resultType="java.lang.String">
+              SELECT
+          IFNULL(c.openId,m.openId) openId
+        FROM
+            aq_adviser_purchase sp
+        LEFT JOIN aq_adviser_recommend sr ON sr.beRecommendedId = sp.purchaserId
+        AND sr.beRecommendedRoleType = sp.purchaserType
+        AND sr.adviserId = sp.adviserId
+        LEFT JOIN aq_customer c ON c.id = sp.purchaserId and sp.purchaserType=2
+        LEFT JOIN aq_manager m ON m.id = sp.purchaserId and sp.purchaserType=3
+        WHERE
+            DATEDIFF(expiryTime, NOW()) >= 0
+        AND sr.pushState = 0
+        AND sp.adviserId = #{adviserId}
+    </select>
+
+    <!-- 微信投顾 列表接口 -->
+    <select id="listWechatAdviser" resultType="com.aq.facade.vo.WechatAdviserQueryVO"
+            parameterType="java.lang.String">
+        SELECT
+	*
+FROM
+	(
+		SELECT
+			str.id,
+			str.indexTime,
+			sr.adviserId adviserId,
+			sr.id recommendId,
+			s.adviserName adviserName,
+			sp.expiryTime expiryTime,
+			str.cumulativeIncome cumulativeIncome,
+			str.annualIncome annualIncome,
+			sr.pushPrice price,
+			sp.id purchaseId,
+			am.url url,
+			s.adviserDesc
+		FROM
+			aq_customer c
+		LEFT JOIN aq_customer_manager cm ON cm.customerId = c.id
+		LEFT JOIN aq_manager am ON am.id = cm.managerId
+		LEFT JOIN aq_adviser_recommend sr ON sr.beRecommendedId = cm.customerId
+		AND sr.recommendedId = cm.managerId
+		AND sr.beRecommendedRoleType = 2
+		AND sr.isDelete = 2
+		LEFT JOIN aq_adviser_trade_record str ON str.adviserId = sr.adviserId
+		LEFT JOIN aq_adviser s ON s.id = sr.adviserId
+		AND sr.beRecommendedId = c.id
+		LEFT JOIN aq_adviser_purchase sp ON sp.managerId = cm.managerId
+		AND sp.purchaserId = c.id
+		AND sp.purchaserType = 2
+		AND sp.adviserId = s.id
+		WHERE
+			c.openId = #{openId}
+	) ttt
+WHERE ttt.id in (
+SELECT
+			MAX(str.id)
+ adviserId
+		FROM
+			aq_customer c
+		LEFT JOIN aq_customer_manager cm ON cm.customerId = c.id
+		LEFT JOIN aq_manager am ON am.id = cm.managerId
+		LEFT JOIN aq_adviser_recommend sr ON sr.beRecommendedId = cm.customerId
+		AND sr.recommendedId = cm.managerId
+		AND sr.beRecommendedRoleType = 2
+		AND sr.isDelete = 2
+		LEFT JOIN aq_adviser_trade_record str ON str.adviserId = sr.adviserId
+		LEFT JOIN aq_adviser s ON s.id = sr.adviserId
+		AND sr.beRecommendedId = c.id
+		LEFT JOIN aq_adviser_purchase sp ON sp.managerId = cm.managerId
+		AND sp.purchaserId = c.id
+		AND sp.purchaserType = 2
+		AND sp.adviserId = s.id
+		WHERE
+			c.openId = #{openId}
+GROUP BY
+	sr.adviserId
+)
+    </select>
+
+	<!-- 微信端 获取投顾详情 -->
+	<select id="getAdviserWechatDetailVO" parameterType="com.aq.facade.dto.AdviserDetailDTO"
+			resultMap="adviserWechatDetailVO">
+		SELECT
+		s.id,
+		s.adviserName,
+		s.adviserDesc,
+		1 purchaseState,
+		'true' isLimit
+		FROM
+		aq_adviser s
+		where id = #{adviserId}
+		order by s.createTime desc
+	</select>
+</mapper>

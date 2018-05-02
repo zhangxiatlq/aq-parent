@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.account.AccountFlowerMapper">
+
+    <!--查询账户流水-->
+    <select id="selectFlower" resultType="com.aq.facade.vo.account.AccountFlowerVO"
+            parameterType="com.aq.facade.dto.account.AccountFlowerDTO">
+        SELECT
+        f.createTime,
+        f.orderNo,
+        f.flowNo,
+        f.price,
+        f.managerBalance,
+        f.userBalance,
+        f.remark,
+        t.description,
+        f.customerTelphone
+        FROM
+        aq_account_flow f
+        LEFT JOIN aq_transcode t ON t.transCode = f.tradeCode
+        <where>
+            <if test="flowNo != null and flowNo != ''">
+                AND f.flowNo like concat('%',#{flowNo},'%')
+            </if>
+            <if test="customerTelphone != null and customerTelphone != ''">
+                AND f.customerTelphone like concat('%',#{customerTelphone},'%')
+            </if>
+            <if test="createTimeStart != null and createTimeStart != ''">
+                AND f.createTime >= #{createTimeStart}
+            </if>
+            <if test="createTimeEnd != null and createTimeEnd != ''">
+                AND f.createTime &lt;= #{createTimeEnd}
+            </if>
+            <if test="managerId != null">
+                AND f.managerId = #{managerId}
+            </if>
+            <if test="userId != null">
+                AND f.userId = #{userId}
+            </if>
+            <if test="customerId != null">
+                AND f.customerId = #{customerId}
+            </if>
+        </where>
+        ORDER BY f.createTime DESC
+    </select>
+
+    <!-- 查询所有账户流水（包括：客户经理，客户，管理员） -->
+    <select id="allSelectFlower" resultType="com.aq.facade.vo.account.AccountFlowerVO"
+            parameterType="com.aq.facade.dto.account.AccountFlowerDTO">
+
+          SELECT aa.* from (SELECT
+        f.createTime,
+        f.orderNo,
+        f.flowNo,
+        f.price,
+        f.managerBalance,
+        f.userBalance,
+        f.remark,
+        t.transCode,
+        t.description,
+        f.customerTelphone,
+        f.idCode,
+        f.employeeID,
+        f.aqDivide,
+        f.roleType
+        <if test="managerMsg != null and managerMsg != ''">
+            ,am.id AS managerId
+        </if>
+        <if test="userMsg != null and userMsg != ''">
+            ,apu.id AS userId
+        </if>
+        <if test="customerMsg != null and customerMsg != ''">
+            ,ac.id AS  customerId
+        </if>
+        FROM
+        aq_account_flow f
+        LEFT JOIN aq_transcode t ON t.transCode = f.tradeCode
+        <if test="managerMsg != null and managerMsg != ''">
+            LEFT JOIN aq_manager am
+            ON  am.id = f.managerId
+            AND (am.realName LIKE concat('%',#{managerMsg},'%') or am.telphone LIKE concat('%',#{managerMsg},'%') or am.idCode LIKE concat('%',#{managerMsg},'%'))
+        </if>
+        <if test="userMsg != null and userMsg != ''">
+            left join aq_permission_user apu
+            on apu.id = f.userId
+            and (apu.userName like concat('%',#{userMsg},'%') or apu.employeeID like concat('%',#{userMsg},'%'))
+        </if>
+        <if test="customerMsg != null and customerMsg != ''">
+            left join aq_customer ac
+            on ac.id = f.customerId
+            and (ac.realName like concat('%',#{customerMsg},'%') or ac.telphone like concat('%',#{customerMsg},'%'))
+        </if>
+        where 1=1
+        <if test="createTimeStart != null and createTimeStart != ''">
+            AND f.createTime >= #{createTimeStart}
+        </if>
+        <if test="createTimeEnd != null and createTimeEnd != ''">
+            AND f.createTime &lt;= #{createTimeEnd}
+        </if>
+        <if test="flowNo != null and flowNo != ''">
+            AND f.flowNo = #{flowNo}
+        </if> ) aa
+        where
+        1=1
+        <if test="managerMsg != null and managerMsg != ''">
+            and (aa.managerId != null || aa.managerId != '')
+        </if>
+        <if test="userMsg != null and userMsg != ''">
+            and (aa.userId != null || aa.userId != '' )
+        </if>
+        <if test="customerMsg != null and customerMsg != ''">
+            and (aa.customerId != null || aa.customerId != '')
+        </if>
+    </select>
+
+</mapper>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.customer.GroupMapper">
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.customer.Group">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="groupName" property="groupName" jdbcType="VARCHAR"/>
+        <result column="isDefault" property="isDefault" jdbcType="TINYINT"/>
+        <result column="isDelete" property="isDelete" jdbcType="TINYINT"/>
+        <result column="createrId" property="createrId" jdbcType="INTEGER"/>
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="updaterId" property="updaterId" jdbcType="INTEGER"/>
+        <result column="updateTime" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, groupName, isDefault, isDelete, createrId, createTime, updaterId, updateTime
+    </sql>
+
+    <!-- 分页查询分组列表 -->
+    <select id="selectGroupList" parameterType="com.aq.facade.dto.customer.QueryGroupDTO"
+            resultType="com.aq.facade.vo.customer.QueryGroupVO">
+        SELECT
+        g.groupName,
+        g.id,
+        g.isDefault,
+        (SELECT count(cm.id) FROM aq_customer_manager cm WHERE cm.groupId = g.id) customerNum
+        FROM
+        aq_group g
+        WHERE
+        g.createrId = #{managerId}
+        AND g.isDelete = 2
+        <if test="groupName != null and groupName!=''">
+            AND g.groupName LIKE concat('%',#{groupName},'%')
+        </if>
+        ORDER BY g.isDefault ASC , g.createTime DESC
+    </select>
+</mapper>

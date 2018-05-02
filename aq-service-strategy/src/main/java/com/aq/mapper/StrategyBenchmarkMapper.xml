@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.StrategyBenchmarkMapper">
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.StrategyBenchmark">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="type" property="type" jdbcType="INTEGER"/>
+        <result column="benchmarkName" property="benchmarkName" jdbcType="VARCHAR"/>
+        <result column="benchmarkNumber" property="benchmarkNumber" jdbcType="DECIMAL"/>
+        <result column="source" property="source" jdbcType="TINYINT"/>
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="strategyId" property="strategyId" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, type, benchmarkName, benchmarkNumber, source, createTime, strategyId
+    </sql>
+
+
+    <sql id="where_cause">
+        update strategy_benchmark
+        <set>
+            <if test="type != null">
+                type = #{type,jdbcType=INTEGER},
+            </if>
+            <if test="benchmarkName != null">
+                benchmarkName = #{benchmarkName,jdbcType=VARCHAR},
+            </if>
+            <if test="benchmarkNumber != null">
+                benchmarkNumber = #{benchmarkNumber,jdbcType=DECIMAL},
+            </if>
+            <if test="source != null">
+                source = #{source,jdbcType=TINYINT},
+            </if>
+            <if test="createTime != null">
+                createTime = #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="strategyId != null">
+                strategyId = #{strategyId,jdbcType=INTEGER},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </sql>
+</mapper>

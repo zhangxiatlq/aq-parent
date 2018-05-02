@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.AdviserPayTradeMapper">
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.AdviserPayTrade">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="orderId" property="orderId" jdbcType="INTEGER"/>
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="paySuccessTime" property="paySuccessTime" jdbcType="TIMESTAMP"/>
+        <result column="thirdOrderNo" property="thirdOrderNo" jdbcType="VARCHAR"/>
+        <result column="tradeCode" property="tradeCode" jdbcType="TINYINT"/>
+        <result column="payMoney" property="payMoney" jdbcType="DECIMAL"/>
+        <result column="payState" property="payState" jdbcType="TINYINT"/>
+        <result column="orderNo" property="orderNo" jdbcType="VARCHAR"/>
+        <result column="createId" property="createId" jdbcType="INTEGER"/>
+        <result column="roleType" property="roleType" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, orderId, createTime, paySuccessTime, thirdOrderNo, tradeCode, payMoney, payState, 
+        orderNo, createId, roleType
+    </sql>
+
+
+    <sql id="11">
+        update aq_adviser_pay_trade
+        <set>
+            <if test="orderId != null">
+                orderId = #{orderId,jdbcType=INTEGER},
+            </if>
+            <if test="createTime != null">
+                createTime = #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="paySuccessTime != null">
+                paySuccessTime = #{paySuccessTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="thirdOrderNo != null">
+                thirdOrderNo = #{thirdOrderNo,jdbcType=VARCHAR},
+            </if>
+            <if test="tradeCode != null">
+                tradeCode = #{tradeCode,jdbcType=TINYINT},
+            </if>
+            <if test="payMoney != null">
+                payMoney = #{payMoney,jdbcType=DECIMAL},
+            </if>
+            <if test="payState != null">
+                payState = #{payState,jdbcType=TINYINT},
+            </if>
+            <if test="orderNo != null">
+                orderNo = #{orderNo,jdbcType=VARCHAR},
+            </if>
+            <if test="createId != null">
+                createId = #{createId,jdbcType=INTEGER},
+            </if>
+            <if test="roleType != null">
+                roleType = #{roleType,jdbcType=TINYINT},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </sql>
+
+</mapper>

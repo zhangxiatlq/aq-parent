@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.ToolPushMapper" >
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.ToolPush" >
+        <id column="id" property="id" jdbcType="INTEGER" />
+        <result column="bindId" property="bindId" jdbcType="INTEGER" />
+        <result column="direction" property="direction" jdbcType="TINYINT" />
+        <result column="tranPrice" property="tranPrice" jdbcType="DECIMAL" />
+        <result column="num" property="num" jdbcType="INTEGER" />
+        <result column="totalPrice" property="totalPrice" jdbcType="DECIMAL" />
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP" />
+        <result column="isDelete" property="isDelete" jdbcType="TINYINT" />
+    </resultMap>
+    
+    
+    <!-- 根据绑定ID 查询推送记录数据 -->
+    <select id="selectToolPushs" resultType="com.aq.facade.vo.ToolPushVO">
+    	SELECT
+			id,
+			direction,
+			tranPrice,
+			num,
+			totalPrice,
+			createTime
+		FROM
+			aq_tool_push
+		WHERE
+			isDelete = 0
+		AND
+			bindId = #{bindId}
+		order by createTime desc
+    </select>
+    <!-- 查询当天最新推送方向 -->
+    <select id="selectToolPush" resultType="java.lang.String">
+    	SELECT
+			direction
+		FROM
+			aq_tool_push
+		WHERE
+			bindId = #{bindId}
+		AND TO_DAYS(NOW()) = TO_DAYS(createTime)
+		ORDER BY
+			createTime DESC
+		LIMIT 1
+    </select>
+    <!-- 查询最新一条推送数据 -->
+    <select id="selectToolPushByNewest" resultType="com.aq.facade.entity.ToolPush">
+    	SELECT
+			createTime,
+			direction
+		FROM
+			aq_tool_push
+		WHERE
+			bindId = #{bindId}
+		ORDER BY
+			createTime DESC
+		LIMIT 1
+    </select>
+    <!-- 查询当天是否推送过看空 -->
+    <select id="selectToolPushBySellOut" resultType="int">
+    	SELECT
+			count(1)
+		FROM
+			aq_tool_push
+		WHERE
+			bindId = #{bindId}
+		AND TO_DAYS(NOW()) = TO_DAYS(createTime)
+		AND direction = 0
+    </select>
+    <!-- 查询当天是否推送过看多 -->
+    <select id="selectToolPushByPurchase" resultType="int">
+    	SELECT
+			count(1)
+		FROM
+			aq_tool_push
+		WHERE
+			bindId = #{bindId}
+		AND TO_DAYS(NOW()) = TO_DAYS(createTime)
+		AND direction = 1
+    </select>
+</mapper>

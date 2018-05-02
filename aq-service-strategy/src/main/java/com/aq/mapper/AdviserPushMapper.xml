@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.AdviserPushMapper">
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.AdviserPush">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="adviserId" property="adviserId" jdbcType="INTEGER"/>
+        <result column="sharesCode" property="sharesCode" jdbcType="VARCHAR"/>
+        <result column="sharesName" property="sharesName" jdbcType="VARCHAR"/>
+        <result column="tradeTime" property="tradeTime" jdbcType="TIMESTAMP"/>
+        <result column="direction" property="direction" jdbcType="TINYINT"/>
+        <result column="pushDate" property="pushDate" jdbcType="TIMESTAMP"/>
+        <result column="tradeNumber" property="tradeNumber" jdbcType="INTEGER"/>
+        <result column="tradePrice" property="tradePrice" jdbcType="DECIMAL"/>
+        <result column="tradeTotalPrice" property="tradeTotalPrice" jdbcType="DECIMAL"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, adviserId, sharesCode, sharesName, tradeTime, direction
+        pushDate, tradeNumber, tradePrice, tradeTotalPrice
+    </sql>
+
+
+    <sql id="11">
+        update aq_adviser_push
+        <set>
+            <if test="adviserId != null">
+                adviserId = #{adviserId,jdbcType=INTEGER},
+            </if>
+            <if test="sharesCode != null">
+                sharesCode = #{sharesCode,jdbcType=VARCHAR},
+            </if>
+            <if test="sharesName != null">
+                sharesName = #{sharesName,jdbcType=VARCHAR},
+            </if>
+            <if test="tradeTime != null">
+                tradeTime = #{tradeTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="direction != null">
+                direction = #{direction,jdbcType=TINYINT},
+            </if>
+            <if test="pushDate != null">
+                pushDate = #{pushDate,jdbcType=TIMESTAMP},
+            </if>
+            <if test="tradeNumber != null">
+                tradeNumber = #{tradeNumber,jdbcType=INTEGER},
+            </if>
+            <if test="tradePrice != null">
+                tradePrice = #{tradePrice,jdbcType=DECIMAL},
+            </if>
+            <if test="tradeTotalPrice != null">
+                tradeTotalPrice = #{tradeTotalPrice,jdbcType=DECIMAL},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </sql>
+
+    <!-- 获取推送记录 -->
+    <select id="selectPushList" resultType="com.aq.facade.vo.AdviserPushQueryVO">
+        SELECT
+            ap.id,
+            ap.sharesName,
+            ap.sharesCode,
+            ap.tradeTime,
+            ap.direction,
+            ap.tradeNumber,
+            ap.tradePrice,
+            ap.tradeTotalPrice,
+            ap.tradeStatus,
+            ap.realPrice
+        FROM
+            aq_adviser_push ap
+        LEFT JOIN aq_adviser a ON a.id = ap.adviserId
+        WHERE a.createrId = #{managerId} AND a.isDelete = 2
+        order by ap.tradeTime desc
+    </select>
+
+    <select id="selectPushAllUnDeal" resultType="com.aq.facade.vo.AdviserPushVO">
+        SELECT
+            ap.id pushId,
+            ap.adviserId,
+            ap.sharesName,
+            ap.sharesCode,
+            ap.tradeTime,
+            ap.direction,
+            ap.tradeNumber,
+            ap.tradePrice,
+            ap.tradeTotalPrice,
+            ap.tradeStatus,
+            ap.pushDate,
+            a.createrId managerId
+        FROM
+            aq_adviser_push ap
+        LEFT JOIN aq_adviser a ON a.id = ap.adviserId
+        WHERE ap.tradeStatus = 2 AND a.isDelete = 2
+    </select>
+
+    <!-- 获取投顾推送的openId -->
+    <select id="selectPushOpenId" resultType="java.lang.String">
+        SELECT
+            c.openId openId
+        FROM
+            aq_adviser_purchase ap
+        LEFT JOIN aq_adviser_recommend ar ON ar.beRecommendedId = ap.purchaserId
+        AND ar.beRecommendedRoleType = ap.purchaserType
+        AND ar.adviserId = ap.adviserId
+        LEFT JOIN aq_customer c ON c.id = ap.purchaserId
+        AND ap.purchaserType = 2
+        WHERE
+            DATEDIFF(expiryTime, NOW()) >= 0
+        AND ar.pushState = 0
+        AND ap.adviserId = #{adviserId}
+        AND c.openId IS NOT NULL AND c.openId != ''
+        UNION ALL
+            SELECT
+                m.openId openId
+            FROM
+                aq_adviser_purchase ap
+            LEFT JOIN aq_manager m ON m.id = ap.purchaserId
+            AND ap.purchaserType = 3
+            WHERE
+                DATEDIFF(expiryTime, NOW()) >= 0
+            AND ap.adviserId = #{adviserId}
+            AND m.openId IS NOT NULL AND m.openId != ''
+    </select>
+
+</mapper>

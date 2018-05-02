@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.ToolBindRecordMapper">
+
+	<!-- 查询工具记录 -->
+	<select id="selectToolBindRecord" resultType="com.aq.facade.vo.WeChatToolVO">
+		SELECT
+			a.id,
+			a.toolId,
+			a.toolCategoryCode categoryCode,
+			(
+				CASE a.toolCategoryCode
+				WHEN b.toolCode THEN
+					b.stockCode
+				WHEN c.toolCode THEN
+					c.stockCode
+				WHEN d.toolCode THEN
+					d.stockCode
+				END
+			) stockCode,
+			(
+				CASE a.toolCategoryCode
+				WHEN b.toolCode THEN
+					b.stockName
+				WHEN c.toolCode THEN
+					c.stockName
+				WHEN d.toolCode THEN
+					d.stockName
+				END
+			) stockName,
+			IFNULL((
+				CASE a.toolCategoryCode
+				WHEN b.toolCode THEN
+					b.entrustNum
+				WHEN c.toolCode THEN
+					c.entrustNum
+				END
+			),0) entrustNum,
+			(
+				CASE a.toolCategoryCode
+				WHEN b.toolCode THEN
+					b. status
+				WHEN c.toolCode THEN
+					c. status
+				WHEN d.toolCode THEN
+					d. status
+				END
+			) 'status',
+			(
+				CASE a.toolCategoryCode
+				WHEN b.toolCode THEN
+					'网格工具'
+				WHEN c.toolCode THEN
+					'卖点工具'
+				WHEN d.toolCode THEN
+					CASE d.toolType
+					WHEN 1 THEN
+						'趋势量化工具'
+					WHEN 2 THEN
+						'趋势量化工具-专用'
+					END
+				END
+			) categoryDesc
+		FROM
+			aq_tool_bind a
+		LEFT JOIN aq_grid_tool b ON a.toolId = b.id
+		AND a.toolCategoryCode = b.toolCode
+		AND b.isDelete = 0
+		LEFT JOIN aq_selling_tool c ON a.toolId = c.id
+		AND a.toolCategoryCode = c.toolCode
+		AND c.isDelete = 0
+		LEFT JOIN aq_trend_tool d ON a.toolId = d.id
+		AND a.toolCategoryCode = d.toolCode
+		AND d.isDelete = 0
+		WHERE
+			a.isDelete = 0
+		and	a.userId = #{customerId}
+		and a.userType = 2
+		ORDER BY
+			a.createTime DESC
+	</select>
+	
+	<!-- 根据多个绑定记录ID查询绑定记录 -->
+	<select id="selectRecordByIds" parameterType="java.util.List" resultType="com.aq.facade.entity.ToolBindRecord">
+		 select 
+		 	* 
+		 from 
+		 	aq_tool_bind 
+		 where
+		 	id in
+		 <foreach collection="list" index="index" item="item" open="(" separator="," close=")">
+            #{item}
+         </foreach>  
+	</select>
+	<!-- 查询客户工具设置 -->
+	<select id="selectToolSetUp" resultType="com.aq.facade.vo.ToolSetUpVO">
+		select 
+			a.num,
+			a.customerId,
+			b.realName
+		from 
+			aq_toolbindnum a left join aq_customer b on a.customerId = b.id
+		where
+			a.toolCode = #{categoryCode}
+		and a.customerId = #{customerId}
+	</select>
+	<!-- 查询工具绑定sql -->
+	<sql id="tool_bind_sql">
+		a.userId,
+		a.userType,
+		a.id,
+		a.toolId,
+		a.toolCategoryCode categoryCode,
+		(
+			CASE a.toolCategoryCode
+			WHEN b.toolCode THEN
+				b.stockCode
+			WHEN c.toolCode THEN
+				c.stockCode
+			WHEN d.toolCode THEN
+				d.stockCode
+			END
+		) stockCode,
+		(
+			CASE a.toolCategoryCode
+			WHEN b.toolCode THEN
+				b.stockName
+			WHEN c.toolCode THEN
+				c.stockName
+			WHEN d.toolCode THEN
+				d.stockName
+			END
+		) stockName,
+		(
+			CASE a.toolCategoryCode
+			WHEN b.toolCode THEN
+				b. status
+			WHEN c.toolCode THEN
+				c. status
+			WHEN d.toolCode THEN
+				d. status
+			END
+		) 'status',
+		(
+			CASE a.toolCategoryCode
+			WHEN b.toolCode THEN
+				'网格工具'
+			WHEN c.toolCode THEN
+				'卖点工具'
+			WHEN d.toolCode THEN
+				'趋势量化工具'
+			END
+		) categoryDesc
+	FROM
+		aq_tool_bind a
+	LEFT JOIN aq_grid_tool b ON a.toolId = b.id
+	AND a.toolCategoryCode = b.toolCode
+	AND b.isDelete = 0
+	LEFT JOIN aq_selling_tool c ON a.toolId = c.id
+	AND a.toolCategoryCode = c.toolCode
+	AND c.isDelete = 0
+	LEFT JOIN aq_trend_tool d ON a.toolId = d.id
+	AND a.toolCategoryCode = d.toolCode
+	AND d.isDelete = 0
+	WHERE
+		a.isDelete = 0
+	AND	a.createrId = #{managerId}
+	</sql>
+	<!-- 查询客户经理绑定的工具列表数据 -->
+	<select id="selectToolBinds" resultType="com.aq.facade.vo.ToolBindVO">
+		SELECT
+		<include refid="tool_bind_sql"/>
+		<if test="customerId != null">
+			AND a.userId = #{customerId}
+			AND a.userType = 2
+			OR (
+				a.userId = #{managerId}
+				AND a.userType = 3
+			)
+		</if>
+		ORDER BY
+			a.createTime DESC
+	</select>
+	<!-- 工具推荐详情 -->
+	<select id="selectToolBindInfo" resultType="com.aq.facade.vo.ToolBindInfoVO">
+		SELECT
+			a.id bindId,
+			a.userId,
+			a.userType,
+			(case a.userType when 2 then ac.realName when 3 then am.realName end) realName,
+			b.*
+			<if test="categoryCode == 'TOOL100003'">
+			,toolType
+			</if>
+		FROM
+			aq_tool_bind a
+		LEFT JOIN aq_customer ac on a.userId = ac.id
+		LEFT JOIN aq_manager am on a.userId = am.id
+		LEFT JOIN 
+			<if test="categoryCode == 'TOOL100001'">
+				aq_grid_tool
+			</if>
+			<if test="categoryCode == 'TOOL100002'">
+				aq_selling_tool
+			</if>
+			<if test="categoryCode == 'TOOL100003'">
+				aq_trend_tool
+			</if> 
+		b ON a.toolId = b.id
+		WHERE a.id = #{bindId}
+		AND a.toolCategoryCode = #{categoryCode}
+	</select>
+
+	<select id="selectToolBindInfoByCode" resultType="com.aq.facade.vo.ToolBindInfoVO">
+		SELECT
+		a.id bindId
+		<if test="categoryCode == 'TOOL100003'">
+			,toolType
+		</if>
+		FROM
+		aq_tool_bind a
+		LEFT JOIN
+		<if test="categoryCode == 'TOOL100001'">
+			aq_grid_tool
+		</if>
+		<if test="categoryCode == 'TOOL100002'">
+			aq_selling_tool
+		</if>
+		<if test="categoryCode == 'TOOL100003'">
+			aq_trend_tool
+		</if>
+		b ON a.toolId = b.id
+		WHERE a.id in
+		<foreach collection="bindIdS" index="index" item="item" open="(" separator="," close=")">
+			#{item}
+		</foreach>
+		AND a.toolCategoryCode = #{categoryCode}
+	</select>
+	<!-- 批量修改同步状态 -->
+	<update id="updateToolIsSynchro">
+		 update 
+		 	aq_tool_bind
+		 set 
+		 	 isSynchro = #{isSynchro},
+		 	 updateTime = now()
+		 where
+		 	id in
+		 <foreach collection="list" index="index" item="item" open="(" separator="," close=")">
+            #{item}
+         </foreach>  
+	</update>
+	<!-- 批量修改状态 -->
+	<update id="updateByIds">
+		update 
+			aq_tool_bind
+		set 
+			isDelete = #{status},
+			updateTime = now()
+		where
+			id in
+		 <foreach collection="list" index="index" item="item" open="(" separator="," close=")">
+            #{item}
+         </foreach>  
+	</update>
+	<!-- 根据绑定ID 查询客户微信openID -->
+	<select id="selectCustomerOpenId" resultType="com.aq.facade.vo.ToolBindUserInfoVO">
+		SELECT
+			(case a.userType when 2 then b.openId when 3 then am.openId end) openId,
+			a.toolCategoryCode,
+			(case a.userType when 2 then b.username when 3 then am.username end)userName,
+			att.toolType
+		FROM
+			aq_tool_bind a
+		LEFT JOIN aq_trend_tool att on a.toolId = att.id and a.toolCategoryCode = att.toolCode
+		LEFT JOIN aq_customer b ON a.userId = b.id and a.userType = 2
+		LEFT JOIN aq_manager am ON a.userId = am.id and a.userType = 3
+		WHERE
+			a.isDelete = 0
+		AND a.isPush = 1
+		AND	a.id = #{bindId}
+	</select>
+	<!-- 查询工具数量 -->
+	<select id="selectToolNumber" resultType="java.lang.Integer">
+		SELECT
+			num
+		FROM
+			aq_toolbindnum
+		WHERE
+			customerId = #{customerId}
+		AND toolCode = #{toolCategoryCode}
+		
+		UNION ALL
+		
+		SELECT
+			count(1)
+		FROM
+			aq_tool_bind
+		WHERE
+			userId = #{customerId}
+		AND userType = 2
+		AND toolCategoryCode = #{toolCategoryCode}
+		AND isDelete = 0
+	</select>
+	<!-- 批量修改同步删除状态 -->
+	<select id="upateSynchroDelete">
+		update 
+			aq_tool_bind
+		set 
+			isSynchroDelete = #{status},
+			updateTime = now()
+		where
+			id in
+		 <foreach collection="list" index="index" item="item" open="(" separator="," close=")">
+            #{item}
+         </foreach> 
+	</select>
+</mapper>

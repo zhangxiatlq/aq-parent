@@ -1,0 +1,175 @@
+spring:
+   profiles:
+     active: dev
+#mybatis扫描包
+mybatis:
+    type-aliases-package: com.aq.facade.entity
+
+#通用Mapper
+mapper:
+    mappers:
+        - com.aq.core.base.BaseMapper
+    not-empty: false
+    identity: MYSQL
+
+
+#日志配置
+logging:
+  level:
+    org.apache.zookeeper: off
+    com.alibaba: off
+    com.aq.mapper: debug
+
+#pageHelper分页设置
+pagehelper:
+    helperDialect: mysql
+    reasonable: false
+    supportMethodsArguments: true
+    params: count=countSql
+
+---
+spring:
+  profiles: dev
+  datasource:
+    druid:
+      driver-class-name: com.mysql.jdbc.Driver
+      url: jdbc:mysql://192.168.1.248:3306/aq_dev?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=false
+      username: aq_test
+      password: Jv8/jHDKoLopN8qeQfWrQc5Y5L9BzzUvM2gMLMrfU6OQPus5ScPBtRAjzdvQfDrZWpZArjZk3ew7MUp8rBSolw==
+      max-active: 50
+      initial-size: 10
+      max-wait: 60000
+      min-idle: 1
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 30000
+      validation-query: select 'x'
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      connection-properties: config.decrypt=true;config.decrypt.key=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAIE8oYzp/nVggnLXw8mvZq6FDXaxyciHfoLYE/WxpkFj9AV7dBY9jNwvTUB7lR/r2u6ufj9JZWHjMcQ44Ph62fcCAwEAAQ==
+      filter:
+        config:
+          enabled: true
+
+  #redis相关配置
+  redis:
+    host: 127.0.0.1
+    database: 0
+    port: 6379
+    password:
+    timeout: 60000
+    pool:
+      max-wait: -1
+      max-idle: 500
+      min-idle: 0
+
+---
+spring:
+  profiles: test
+  datasource:
+    druid:
+      driver-class-name: com.mysql.jdbc.Driver
+      url: jdbc:mysql://192.168.1.248:3306/aq_test?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=false
+      username: aq_test
+      password: Jv8/jHDKoLopN8qeQfWrQc5Y5L9BzzUvM2gMLMrfU6OQPus5ScPBtRAjzdvQfDrZWpZArjZk3ew7MUp8rBSolw==
+      max-active: 50
+      initial-size: 10
+      max-wait: 60000
+      min-idle: 1
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 30000
+      validation-query: select 'x'
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      connection-properties: config.decrypt=true;config.decrypt.key=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAIE8oYzp/nVggnLXw8mvZq6FDXaxyciHfoLYE/WxpkFj9AV7dBY9jNwvTUB7lR/r2u6ufj9JZWHjMcQ44Ph62fcCAwEAAQ==
+      filter:
+        config:
+          enabled: true
+
+  #redis相关配置
+  redis:
+    host: 192.168.1.248
+    database: 0
+    port: 6379
+    password: 13579qaz
+    timeout: 60000
+    pool:
+      max-wait: -1
+      max-idle: 500
+      min-idle: 0
+
+---
+
+---
+spring:
+  profiles: prod-test
+  datasource:
+    druid:
+      driver-class-name: com.mysql.jdbc.Driver
+      url: jdbc:mysql://127.0.0.1:3306/aq_test?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=false
+      username: aq_test
+      password: AMfVX3Vo+lGkWkNFhfHqhwKf9sGTFJW89EB/oR8FuzCvVqeXCe8dqwICOvZJlm4ElSRW4es1u9dEWqRjX9zQ+w==
+      max-active: 50
+      initial-size: 10
+      max-wait: 60000
+      min-idle: 1
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 30000
+      validation-query: select 'x'
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      connection-properties: config.decrypt=true;config.decrypt.key=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKgWEQQnDr8rmQCTl03ZGHKhkp6kdMDIDFCl0FWalnFbljNORW97E0ldmFnngjmK0llPnrJNaJBXs/kQx3YyI/UCAwEAAQ==
+      filter:
+        config:
+          enabled: true
+
+  #redis相关配置
+  redis:
+    host: 127.0.0.1
+    database: 0
+    port: 6379
+    password: Z7ztUjWv
+    timeout: 60000
+    pool:
+      max-wait: -1
+      max-idle: 500
+      min-idle: 0
+
+---
+
+spring:
+  profiles: prod
+  datasource:
+    druid:
+      driver-class-name: com.mysql.jdbc.Driver
+      url: jdbc:mysql://172.18.203.179:3306/aq_data?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=false
+      username: aq_data
+      password: V9rT09rxbUEdOklqwA2Z9mqlYAz7c7W90xOuau/XZz8y5PDRFHpsGz3gmDgcSUEmIuvQw091WU5YgQkoLCHhtw==
+      max-active: 50
+      initial-size: 10
+      max-wait: 60000
+      min-idle: 1
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 30000
+      validation-query: select 'x'
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      connection-properties: config.decrypt=true;config.decrypt.key=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAIMhe/247P82fiEHpdWclgMH7YK8JxN0N1Zp80N7Hya86fAMxebal8oL+mLas2FH2nJUxbfyzCXo98H7088IcycCAwEAAQ==
+      filter:
+        config:
+          enabled: true
+
+  #redis相关配置
+  redis:
+    host: 172.18.203.179
+    database: 0
+    port: 6379
+    password: 1EC4b2Iq
+    timeout: 60000
+    pool:
+      max-wait: -1
+      max-idle: 500
+      min-idle: 0

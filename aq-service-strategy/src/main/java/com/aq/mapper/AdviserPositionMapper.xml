@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.AdviserPositionMapper">
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.AdviserPosition">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="adviserId" property="adviserId" jdbcType="INTEGER"/>
+        <result column="sharesCode" property="sharesCode" jdbcType="VARCHAR"/>
+        <result column="sharesName" property="sharesName" jdbcType="VARCHAR"/>
+        <result column="holdingNo" property="holdingNo" jdbcType="INTEGER"/>
+        <result column="referenceCost" property="referenceCost" jdbcType="DECIMAL"/>
+        <result column="referenceProfit" property="referenceProfit" jdbcType="DECIMAL"/>
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, adviserId, sharesCode, sharesName, holdingNo, referenceCost, referenceProfit,
+        createTime
+    </sql>
+
+
+    <sql id="11">
+        update aq_adviser_position
+        <set>
+            <if test="adviserId != null">
+                adviserId = #{adviserId,jdbcType=INTEGER},
+            </if>
+            <if test="sharesCode != null">
+                sharesCode = #{sharesCode,jdbcType=VARCHAR},
+            </if>
+            <if test="sharesName != null">
+                sharesName = #{sharesName,jdbcType=VARCHAR},
+            </if>
+            <if test="holdingNo != null">
+                holdingNo = #{holdingNo,jdbcType=INTEGER},
+            </if>
+            <if test="referenceCost != null">
+                referenceCost = #{referenceCost,jdbcType=DECIMAL},
+            </if>
+            <if test="referenceProfit != null">
+                referenceProfit = #{referenceProfit,jdbcType=DECIMAL},
+            </if>
+            <if test="createTime != null">
+                createTime = #{createTime,jdbcType=TIMESTAMP},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </sql>
+
+    <!-- 根据投顾ID 查询投顾持仓列表数据 -->
+    <select id="selectAdviserPositionByPage" resultType="com.aq.facade.entity.AdviserPosition">
+		SELECT
+			*
+		FROM
+			aq_adviser_position
+		WHERE
+			adviserId = #{adviserId}
+		AND holdingNo > 0
+		ORDER BY
+			createTime DESC
+	</select>
+
+
+    <update id="updateAdviserPosition" parameterType="com.aq.facade.entity.AdviserPosition">
+        UPDATE aq_adviser_position SET holdingNo = holdingNo + #{holdingNo}
+        WHERE
+			adviserId = #{adviserId}
+    </update>
+
+    <select id="selectAdviserPositionZero" resultType="com.aq.facade.entity.AdviserPosition">
+        SELECT
+			*
+		FROM
+			aq_adviser_position
+		WHERE
+			holdingNo = 0
+    </select>
+    
+    <!-- 根据多个持仓id查询持仓信息  -->
+    <select id="selectAdviserPositionByIds" resultType="com.aq.facade.entity.AdviserPosition">
+    	SELECT
+			id,
+			sharesCode,
+			adviserId
+		FROM
+			aq_adviser_position
+		WHERE
+			id in
+		<foreach collection="list" index="index" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach> 
+    </select>
+</mapper>

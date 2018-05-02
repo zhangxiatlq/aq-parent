@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.ConsultMapper">
+
+    <!-- 根据条件查询今日汇 -->
+    <select id="selectConsultList" resultType="com.aq.facade.vo.ConsultQueryVO"
+            parameterType="com.aq.facade.dto.ConsultQueryDTO">
+        SELECT id,title,content,isVisible,createTime,reason,auditTime
+        FROM aq_consult
+        WHERE createrId = #{managerId} AND isDelete = 2
+        <if test="title != null and title != ''">
+            AND title LIKE concat('%',#{title},'%')
+        </if>
+        <if test="isVisible != null">
+            AND isVisible = #{isVisible}
+        </if>
+        <if test="orderType !=null and orderType == 'asc'">
+            ORDER BY createTime asc
+        </if>
+        <if test="orderType !=null and orderType == 'desc'">
+            ORDER BY createTime DESC
+        </if>
+    </select>
+
+    <select id="selectAdviserWeChatList" resultType="com.aq.facade.vo.ConsultManagerVO" parameterType="java.lang.Integer">
+        SELECT
+            m.url,
+            m.id managerId,
+            a.adviserDesc,
+            a.adviserName,
+            atr.annualIncome,
+            atr.cumulativeIncome
+        FROM
+            aq_customer_manager cm
+        LEFT JOIN aq_manager m ON cm.managerId = m.id
+        LEFT JOIN aq_adviser a ON m.id = a.createrId
+        LEFT JOIN aq_adviser_trade_record atr ON a.id = atr.adviserId
+        WHERE
+            cm.customerId = #{customerId}
+        order by atr.indexTime desc limit 1
+    </select>
+
+    <select id="selectConsultWeChatList" resultType="com.aq.facade.vo.ConsultWeChatVO"
+            parameterType="java.lang.Integer">
+        SELECT id,title,content,DATE_FORMAT(createTime, '%Y-%m-%d %T') createTime
+        FROM aq_consult
+        WHERE createrId = #{managerId} AND isDelete = 2
+        ORDER BY createTime DESC
+    </select>
+</mapper>

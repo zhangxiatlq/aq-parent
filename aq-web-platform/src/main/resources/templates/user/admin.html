@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <meta charset="UTF-8">
+    <title>用户列表</title>
+    <!--bootstrap-select  css文件-->
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/bootstrapselect/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/bootstrapselect/css/bootstrap-select.css}"/>
+    <!--日期  css文件-->
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/datepicker/css/bootstrap-datepicker.css}">
+    <!--弹窗 css文件-->
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/layer/layer.css}">
+    <!--主要css样式-->
+    <link rel="stylesheet" type="text/css" th:href="@{/static/css/models.css}">
+    <style>
+        .addList li .bootstrap-select.btn-group:not(.input-group-btn), .addList li .bootstrap-select.btn-group[class*="col-"] {
+            float: left;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div class="MainContent">
+    <!--主体内容-->
+    <div class="MainCont">
+        <div class="snbBtn">
+            <shiro:hasPermission name="userAdd">
+                <button class="columnBtn js_addLabour" name="" value="添加">添加员工</button>
+            </shiro:hasPermission>
+        </div>
+        <!--筛选条件-->
+        <div class="screen">
+            <shiro:hasPermission name="userQuery">
+                <table class="tableBox">
+                    <form id="selectForm">
+                        <tr>
+                            <th>员工：</th>
+                            <td colspan="1"><input type="text" name="userName" id="userName" placeholder="姓名、工号、手机号"/>
+                            </td>
+                            <th>状态：</th>
+                            <td>
+                                <select class="selectpicker" id="isable" name="isable">
+                                    <option value="">全部</option>
+                                    <option value="0">已冻结</option>
+                                    <option value="1">正常</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </form>
+                    <td colspan="6">
+                        <input name="" type="button" onclick="query();" value="查询">
+                        <input name="" type="button" onclick="reset();" value="重置">
+                    </td>
+                    </tr>
+
+
+                </table>
+            </shiro:hasPermission>
+        </div>
+        <!--end 筛选条件-->
+        <!--列表-->
+        <div class="wareBox ph_tabScroll">
+            <table class="wareList" id="example"></table>
+        </div>
+        <!--end 列表-->
+    </div>
+    <!--end 主体内容-->
+</div>
+<!--添加编辑用户弹窗-->
+<div class="PopupBox" id="addManageBox">
+    <!--内容-->
+    <div class="PopupCon">
+        <form class="form-inline" id="formID">
+            <input id="editUserId" name="id" type="hidden">
+
+            <ul class="addList">
+                <li>
+                    <label for=""><span class="require">*</span>工号：</label>
+                    <input class="memberTxt validate[required]" maxlength="32" id="editEmployeeID" name="employeeID"
+                           type="text"
+                           placeholder="请输入工号">
+                </li>
+                <li>
+                    <label for=""><span class="require">*</span>姓名：</label>
+                    <input id="editUserName" class="memberTxt validate[required]" maxlength="64" name="userName"
+                           type="text"
+                           placeholder="请输入姓名">
+                </li>
+                <li><label for="">联系手机号：</label>
+                    <input id="editTelphone" class="memberTxt validate[custom[phone]]" name="telphone" maxlength="11"
+                           type="text" placeholder="请输入联系手机号">
+                </li>
+            </ul>
+        </form>
+    </div>
+    <!--end 内容-->
+</div>
+<!--end 添加编辑用户弹窗-->
+
+<div class="PopupBox" id="setVIP">
+    <!--内容-->
+    <div class="PopupCon">
+        <form class="form-inline" id="formSetVIP">
+            <input id="setVIPUserId" name="id" type="hidden">
+            <ul class="addList">
+                <li><label for=""><span class="require">*</span>分成比例：</label>
+                    <input id="divideScale"
+                           class="memberTxt validate[required,custom[minNumber],custom[number],min[0],max[1]"
+                           name="divideScale" type="text">
+                </li>
+                <li><label for=""></label>
+                    <span class="require"> AQ平台获取到的利润比例 </span>
+                </li>
+            </ul>
+        </form>
+    </div>
+    <!--end 内容-->
+</div>
+
+<!--分配角色弹窗-->
+<div class="PopupBox" id="allotBox">
+    <!--内容-->
+    <div class="PopupCon">
+        <div class="wareBox">
+            <form id="userRoleForm">
+                <input id="userId" name="userId" type="hidden">
+                <input id="employeeID1" name="employeeID" type="hidden">
+                <table class="wareList" id="userRole">
+                </table>
+            </form>
+        </div>
+    </div>
+    <!--end 内容-->
+</div>
+<!--end 分配角色弹窗-->
+
+<!--安全配置弹窗-->
+<div class="PopupBox" id="setSecurity">
+    <!--内容-->
+    <div class="PopupCon">
+        <div class="wareBox">
+            <form id="setSecurityForm">
+                <input name="userId" type="hidden">
+                <table class="wareList" id="setSecurityTable">
+                </table>
+            </form>
+        </div>
+    </div>
+    <!--end 内容-->
+</div>
+<!--end 安全配置弹窗-->
+
+<script type="text/javascript" th:src="@{/static/js/jquery-1.11.1.min.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/index.js}"></script>
+<!--bootstrap-select-->
+<script type="text/javascript" th:src="@{/static/js/bootstrapselect/bootstrap.min.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/bootstrapselect/bootstrap-select.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/bootstrapselect/select.js}"></script>
+<!--日期控件-->
+<script type="text/javascript" th:src="@{/static/js/datepicker/bootstrap-datepicker.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/datepicker/jquery.timepicker.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/datepicker/jquery.datepair.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/datepicker/datepicker.js}"></script>
+<!--验证-->
+<script type="text/javascript" th:src="@{/static/js/validat/jquery.validationEngine-zh_CN.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/validat/jquery.validationEngine.js}"></script>
+<!--分页-->
+<script type="text/javascript" th:src="@{/static/js/pages/jquery.dataTables.min.js}"></script>
+<!--弹窗-->
+<script type="text/javascript" th:src="@{/static/js/layer/layer.js}"></script>
+<script type="text/javascript" th:inline="javascript">
+    var tb;
+    var sessionUser = [[${session.login_back_session}]];
+    $(function () {
+
+        tb = $('#example').DataTable({
+            "bServerSide": true,
+            "sPaginationType": "full_numbers",
+            "sDom": '<"">t<"F"ip>',
+            "autoWidth": false,  //自适应宽度
+            "sAjaxSource": "/web/user/admin/list", //ajax调用接口
+            "aoColumnDefs": [{sDefaultContent: '', orderable: false, aTargets: ['_all']}],
+            "aoColumns": [
+                {"sWidth": "80px", "sTitle": "编号", "mData": "id"},
+                {"sTitle": "工号", "mData": "employeeID"},
+                {"sTitle": "姓名", "mData": "userName"},
+                {"sTitle": "联系手机号", "mData": "telphone"},
+                {"sTitle": "AQ VIP分成比例", "mData": "divideScale"},
+                {"sTitle": "客户经理数量", "mData": "managerNum"},
+                {
+                    "sWidth": "100px",
+                    "sTitle": "账号状态",
+                    "mData": "isable",
+                    "class": "sClass",
+                    "mRender": function (data, type, full) {
+                        var text;
+                        if (full.isable == '1') {
+                            text = "<span>正常</span>";
+                        } else {
+                            text = "<span class='gray'>已冻结</span>"
+                        }
+                        return text;
+                    }
+                },
+
+                {
+                    "sWidth": "110px",
+                    "sTitle": "操作",
+                    "mData": "id",
+                    "sClass": "ph_tableShow",
+                    "mRender": function (data, type, full) {
+                        var text = '<div class="operateBox"><input class="operate" name="" type="button" value="操作选项">';
+                        text += '<ul class="operateList hide" role="menu">';
+                        if (full.isable == '1') {
+                            if ([[${session.userFrozen}]]) {
+                                text += '<li><a href="javascript:void(0);" onclick="frozenById(\'' + full.id + '\',\'' + full.userName + '\');">冻结</a> </li>';
+                            }
+                        } else {
+                            if ([[${session.userStart}]]) {
+                                text += '<li ><a href="javascript:void(0);" onclick="startById(\'' + full.id + '\',\'' + full.userName + '\');">解冻</a> </li>';
+                            }
+
+                        }
+                        if ([[${session.userUpdate}]]) {
+                            text += '<li><a href="javascript:void(0);" onclick="editUser(\'' + full.id + '\', \'' + full.employeeID + '\',  \'' + full.userName + '\',\'' + full.telphone + '\');">编辑</a></li>';
+                        }
+                        if ([[${session.userResetPass}]]) {
+                            text += '<li><a href="javascript:void(0);" onclick="resetPass(\'' + full.id + '\');">重置密码</a> </li>';
+                        }
+                        if ([[${session.userSetPermission}]]) {
+                            text += '<li><a href="javascript:void(0);"  onclick="showRole(\'' + full.id + '\',\'' + full.userName + '\',\'' + full.employeeID + '\');">分配角色</a> </li>';
+                        }
+                        if ([[${session.userVIP}]]) {
+                            text += '<li><a href="javascript:void(0);"  onclick="setVIP(\'' + full.id + '\',\'' + full.userName + '\',\'' + full.divideScale + '\');">VIP分成</a> </li>';
+                        }
+                        if ([[${session.userSecurity}]]) {
+                            text += '<li><a href="javascript:void(0);"  onclick="setSecurity(\'' + full.id + '\',\'' + full.userName + '\');">安全设置</a> </li>';
+                        }
+
+                        if ([[${session.userFlow}]]) {
+                            text += '<li><a href="javascript:void(0);"  onclick="userFlow(\'' + full.id + '\',\'' + full.userName + '\');">账户流水</a> </li>';
+                        }
+                        text = text + '</ul></div>';
+                        return text;
+                    }
+                }
+            ],
+            "oLanguage": {
+                "sProcessing": "数据加载中······",
+                "sLengthMenu": "显示 _MENU_ 条记录",
+                "sZeroRecords": "没有您要搜索的内容！",
+                "sEmptyTable": "列表中无数据存在！",
+                "sInfo": "当前显示 _START_ 到 _END_ 条数据，共 _TOTAL_ 条数据",
+                "sInfoEmpty": "显示 0 到 0 条记录",
+                "sInfoFiltered": "数据列表中共  _MAX_ 条记录",
+                "oPaginate": {
+                    "sFirst": "首页",
+                    "sPrevious": "上一页",
+                    "sNext": "下一页",
+                    "sLast": "末页"
+                }
+            },
+            "fnServerData": function (sSource, aoData, fnCallback, oSettings) {
+                oSettings.jqXHR = $.ajax({
+                    "dataType": 'json',
+                    "type": "GET",
+                    "async": 'false',
+                    "url": sSource,
+                    "data": {
+                        'pageNum': (aoData[3].value / aoData[4].value) + 1,
+                        'pageSize': aoData[4].value,
+                        'employeeID': $("#employeeID").val(),
+                        'userName': $("#userName").val(),
+                        'isable': $('#isable').val()
+                    },
+                    "success": fnCallback
+                });
+            },
+            //序号
+            "fnDrawCallback": function () {
+                var api = this.api();
+                var startIndex = api.context[0]._iDisplayStart;//获取到本页开始的条数
+                api.column(0).nodes().each(function (cell, i) {
+                    cell.innerHTML = startIndex + i + 1;
+                });
+            }
+        });
+
+        $("#formID").validationEngine({
+            addPromptClass: 'formError-text',
+            showArrow: false,
+            promptPosition: 'bottomLeft:10 0'
+            , autoHidePrompt: true
+            , autoHideDelay: 3000
+            , fadeDuration: 0.3
+        });
+        $("#formSetVIP").validationEngine({
+            addPromptClass: 'formError-text',
+            showArrow: false,
+            promptPosition: 'bottomLeft:10 0'
+            , autoHidePrompt: true
+            , autoHideDelay: 3000
+            , fadeDuration: 0.3
+        });
+
+
+        //添加用户
+        $('.js_addLabour').on('click', function () {
+            $("#editEmployeeID").removeClass('ph_disabled');
+            $("#editEmployeeID").attr('disabled', false);
+            $("#editUserId").val(null);
+            $('#formID')[0].reset();
+            layer.open({
+                type: 1,
+                title: '添加员工',
+                closeBtn: 1,
+                area: ['460px', '308px'],
+                btn: ['保存', '取消'],
+                btnAlign: 'c',
+                content: $('#addManageBox'),
+                btn1: function (index) {
+                    var flag = $("#formID").validationEngine("validate");
+                    if (!flag) {
+                        return false;
+                    }
+                    $.ajax({
+                        type: "POST",
+                        url: "/web/user/admin/add",
+                        data: $("#formID").serialize(),
+                        success: function (d) {
+                            console.log(d);
+                            if (d.success) {
+                                layer.alert("保存成功！", {
+                                    icon: 1,
+                                    title: '提示',
+                                    closeBtn: 0,
+                                    btnAlign: 'c'
+                                });
+                                tb.draw();
+                                layer.close(index);
+                            } else {
+                                layer.alert(d.message, {
+                                    icon: 2,
+                                    title: '失败',
+                                    closeBtn: 0,
+                                    btnAlign: 'c'
+                                });
+                            }
+                        }
+                    });
+
+                },
+            });
+        });
+    });
+
+    function reset() {
+        $("#selectForm")[0].reset();
+        $("#isable").selectpicker('val', "");
+    }
+
+    //条件查询重新加载数据
+    function query() {
+        tb.draw();
+    }
+
+    function editUser(id, employeeID, userName, telphone) {
+        //给表单赋值
+        if (userName == 'null') {
+            $("#editUserName").val("");
+        } else {
+            $("#editUserName").val(userName);
+        }
+        $("#editUserId").val(id);
+        $("#editTelphone").val(telphone);
+        $("#editEmployeeID").val(employeeID);
+        $("#editEmployeeID").addClass('ph_disabled');
+        $("#editEmployeeID").attr('disabled', true);
+        var title = "对【" + userName + "】进行编辑";
+        layer.open({
+            type: 1,
+            title: title,
+            closeBtn: 0,
+            area: ['460px', '308px'],
+            btn: ['保存', '取消'],
+            btnAlign: 'c',
+            content: $('#addManageBox'),
+            btn1: function (index) {
+                var flag = $("#formID").validationEngine("validate");
+                if (!flag) {
+                    return false;
+                }
+                $.ajax({
+                    type: "POST",
+                    url: "/web/user/admin/update",
+                    data: $("#formID").serialize(),
+                    success: function (d) {
+                        if (d.success) {
+                            tb.draw(false);
+                            layer.alert("保存成功！", {
+                                icon: 1,
+                                title: '提示',
+                                closeBtn: 0,
+                                btnAlign: 'c'
+                            });
+                        } else {
+                            layer.alert(d.message, {
+                                icon: 2,
+                                title: '提示',
+                                closeBtn: 0,
+                                btnAlign: 'c'
+                            });
+                        }
+                    }
+                });
+                $('#formID')[0].reset();
+                layer.close(index);
+
+            },
+            btn2: function (index) {
+                //清空表单
+                $('#formID')[0].reset();
+                layer.close(index);
+            }
+        });
+    }
+
+    //重置密码
+    function resetPass(userId) {
+        layer.confirm('重置密码为aq123456？', {
+            title: '重置密码',
+            icon: 8,
+            btnAlign: 'c',
+            btn: ['确认重置', '取消'],
+            closeBtn: 0
+        }, function (index) {
+            $.ajax({
+                async: false,
+                url: "/web/user/admin/resetPass",
+                data: {userId: userId},
+                type: "POST",
+                dataType: "json",
+                success: function (data) {
+                    if (data.success) {
+                        tb.draw(false);
+                        layer.alert(data.message, {
+                            icon: 1,
+                            title: '提示',
+                            closeBtn: 0,
+                            btnAlign: 'c'
+                        });
+                    } else {
+                        layer.alert(data.message, {
+                            icon: 2,
+                            title: '提示',
+                            closeBtn: 0,
+                            btnAlign: 'c'
+                        });
+                    }
+                }
+            });
+            layer.close(index);
+        });
+    }
+
+    //冻结
+    function frozenById(userId, userName) {
+        if (userId == sessionUser.id) {
+            layer.msg('不能冻结自己！');
+            return false;
+        }
+        var title = "对【" + userName + "】进行冻结";
+        layer.confirm('冻结后，此用户不能登录系统。', {
+            title: title,
+            icon: 3,
+            btnAlign: 'c',
+            btn: ['确认冻结', '取消'],
+            closeBtn: 0
+        }, function (index) {
+            $.ajax({
+                async: false,
+                url: "/web/user/admin/frozen",
+                data: {id: userId},
+                type: "POST",
+                dataType: "json",
+                success: function (data) {
+                    if (data.success) {
+                        tb.draw(false);
+                        layer.alert("冻结成功,此用户不能登录系统！", {
+                            icon: 1,
+                            title: '提示',
+                            closeBtn: 0,
+                            btnAlign: 'c'
+                        });
+                    } else {
+                        layer.alert(data.message, {
+                            icon: 2,
+                            title: '提示',
+                            closeBtn: 0,
+                            btnAlign: 'c'
+                        });
+                    }
+                }
+            });
+            layer.close(index);
+        });
+    }
+
+    //解冻
+    function startById(userId, userName) {
+        var title = "对【" + userName + "】进行解冻";
+        layer.confirm('是否解冻用户?', {
+            title: title,
+            icon: 3,
+            btnAlign: 'c',
+            btn: ['确认解冻', '取消'],
+            closeBtn: 0
+        }, function (index) {
+            $.ajax({
+                async: false,
+                url: "/web/user/admin/start",
+                data: {id: userId},
+                type: "POST",
+                dataType: "json",
+                success: function (data) {
+                    if (data.success) {
+                        tb.draw(false);
+                        layer.alert("解冻成功！", {
+                            icon: 1,
+                            title: '提示',
+                            closeBtn: 0,
+                            btnAlign: 'c'
+                        });
+                    } else {
+                        layer.alert(data.message, {
+                            icon: 2,
+                            title: '提示',
+                            closeBtn: 0,
+                            btnAlign: 'c'
+                        });
+                    }
+                }
+            });
+            layer.close(index);
+        });
+    }
+
+
+    //加载角色
+    function showRole(userId, userName, employeeID) {
+        $("#userId").val(userId);
+        $("#employeeID1").val(employeeID);
+        //获取已选角色
+        var chooseRole = [];
+        $(function () {
+            //获取角色数据
+            $.ajax({
+                async: false,
+                type: "GET",
+                url: "/web/user/admin/getUserRole?userId=" + userId,
+                success: function (data) {
+                    if (data.data) {
+                        chooseRole = data.data;
+                    } else {
+                        layer.alert("加载用户已选角色数据异常!", {
+                            icon: 2,
+                            title: '提示',
+                            closeBtn: 0,
+                            btnAlign: 'c'
+                        });
+                    }
+                }
+            });
+
+            //获取角色数据
+            $.ajax({
+                async: false,
+                type: "GET",
+                url: "/web/permission/role/list/all",
+                success: function (data) {
+                    if (data.data) {
+                        var th = '<thead><tr> <th width="50"><input class="check-all" name="" type="checkbox"></th><th>编号</th><th>角色名称</th><th>角色描述</th><th>状态</th> </tr></thead>';
+                        var trs = '';
+                        var selectAll = true;
+                        for (var i = 0; i < data.data.length; i++) {
+                            if (data.data[i].status == 0) {
+                                data.data[i].status = '禁用';
+                            } else {
+                                data.data[i].status = '启用';
+                            }
+                            if (!data.data[i].description) {
+                                data.data[i].description = '';
+                            }
+
+                            var selected = false;
+                            var tr = '<tr><th><input class="ids" name="roleIds" value="' + data.data[i].id + '" type="checkbox" ></th><td >' + data.data[i].id + '</td><td >' + data.data[i].roleName + '</td><td >' + data.data[i].description + '</td><td >' + data.data[i].status + '</td></tr>';
+                            if (chooseRole && chooseRole.length != 0) {
+                                for (var j = 0; j < chooseRole.length; j++) {
+                                    if (chooseRole[j] == data.data[i].id) {
+                                        tr = '<tr><th><input class="ids" name="roleIds" value="' + data.data[i].id + '" type="checkbox" checked="checked"></th><td >' + data.data[i].id + '</td><td >' + data.data[i].roleName + '</td><td >' + data.data[i].description + '</td><td >' + data.data[i].status + '</td></tr>';
+                                        selected = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            trs += tr;
+                            if (!selected) {
+                                selectAll = false;
+                            }
+                        }
+
+                        if (selectAll) {
+                            th = '<thead><tr> <th width="50"><input class="check-all" name="" type="checkbox" checked="checked"></th><th>编号</th><th>角色名称</th><th>角色描述</th><th>状态</th> </tr></thead>'
+                        }
+
+                        $("#userRole").append(th + '<tbody>' + trs + '</tbody>');
+
+                    } else {
+                        layer.alert("加载角色数据异常!", {
+                            icon: 2,
+                            title: '失败',
+                            closeBtn: 0,
+                            btnAlign: 'c'
+                        });
+                    }
+                }
+            });
+
+            if (userName == 'null') {
+                userName = telPhone + '(电话)';
+            }
+
+            layer.open({
+                type: 1,
+                title: '对【' + userName + '】分配角色',
+                closeBtn: 0,
+                area: ['666px', '440px'],
+                btn: ['保存', '取消'],
+                btnAlign: 'c',
+                content: $('#allotBox'),
+                btn1: function (index) {
+                    updateRole(userId);
+                    layer.close(index);
+                    $("#userRole").empty();
+                },
+                btn2: function (index) {
+                    layer.close(index);
+                    $("#userRole").empty();
+                }
+            });
+        });
+    }
+
+    //修改角色
+    function updateRole(userId) {
+        $.ajax({
+            async: false,
+            url: "/web/user/admin/updateUserPermission",
+            data: $("#userRoleForm").serialize(),
+            type: "POST",
+            success: function (data) {
+                if (data.code == "200") {
+                    tb.draw(false);
+                    layer.alert("角色分配成功,该用户将重新登录！", {
+                        icon: 1,
+                        title: '提示',
+                        closeBtn: 0,
+                        btnAlign: 'c',
+                        btn1: function (index) {
+                            if (userId == sessionUser.id) {
+                                window.location.href = '/web/user/admin/page'
+                            }
+                            tb.draw(false);
+                            layer.close(index);
+                        }
+                    });
+                } else {
+                    layer.alert(data.message, {
+                        icon: 2,
+                        title: '提示',
+                        closeBtn: 0,
+                        btnAlign: 'c'
+                    });
+                }
+            }
+        });
+    }
+
+    //设置VIP
+    function setVIP(userId, userName, divideScale) {
+        var title = "【" + userName + "】设置AQ VIP分成比例";
+        if (divideScale) {
+            $('#divideScale').val(divideScale);
+        }
+        $('#setVIPUserId').val(userId);
+        layer.open({
+            type: 1,
+            title: title,
+            closeBtn: 0,
+            area: ['460px', '308px'],
+            btn: ['保存', '取消'],
+            btnAlign: 'c',
+            content: $('#setVIP'),
+            btn1: function (index) {
+                var flag = $("#formSetVIP").validationEngine("validate");
+                if (!flag) {
+                    return false;
+                }
+                $.ajax({
+                    type: "POST",
+                    url: "/web/user/admin/setVIP",
+                    data: $("#formSetVIP").serialize(),
+                    success: function (d) {
+                        if (d.success) {
+                            tb.draw(false);
+                            layer.alert("保存成功！", {
+                                icon: 1,
+                                title: '提示',
+                                closeBtn: 0,
+                                btnAlign: 'c'
+                            });
+                        } else {
+                            layer.alert(d.message, {
+                                icon: 2,
+                                title: '提示',
+                                closeBtn: 0,
+                                btnAlign: 'c'
+                            });
+                        }
+                    }
+                });
+                $('#formID')[0].reset();
+                layer.close(index);
+
+            },
+            btn2: function (index) {
+                //清空表单
+                $('#formID')[0].reset();
+                layer.close(index);
+            }
+        });
+    }
+
+    //安全设置
+    function setSecurity(userId, userName) {
+        $(function () {
+            //获取安全设置
+            $.ajax({
+                async: false,
+                type: "GET",
+                url: "/web/user/admin/getUserSecurity?userId=" + userId,
+                success: function (data) {
+                    if (data.data) {
+                        var th = '<thead><tr> <th width="50"><input class="check-all" name="" type="checkbox"></th><th>说明</th></tr></thead>';
+                        var trs = '';
+                        var tr = '';
+                        var selectAll = true;
+                        for (var i = 0; i < data.data.length; i++) {
+                            if (data.data[i].checked == 1) {
+                                tr = '<tr><th><input class="ids" name="ids" value="' + data.data[i].id + '" type="checkbox" checked="checked" ></th><td >' + data.data[i].name + '</td></tr>';
+                            } else {
+                                tr = '<tr><th><input class="ids" name="ids" value="' + data.data[i].id + '" type="checkbox"></th><td >' + data.data[i].name + '</td></tr>';
+                                selectAll = false;
+                            }
+                            trs += tr;
+                        }
+                        if (selectAll) {
+                            th = '<thead><tr> <th width="50"><input class="check-all" name="" type="checkbox" checked="checked"></th><th>说明</th></tr></thead>'
+                        }
+
+                        $("#setSecurityTable").append(th + '<tbody>' + trs + '</tbody>');
+
+                    } else {
+                        layer.alert("加载安全配置数据异常!", {
+                            icon: 2,
+                            title: '失败',
+                            closeBtn: 0,
+                            btnAlign: 'c'
+                        });
+                    }
+                }
+            });
+            $('#setSecurityForm').find("input[name='userId']").val(userId);
+            layer.open({
+                type: 1,
+                title: '对【' + userName + '】安全配置',
+                closeBtn: 0,
+                area: ['666px', '440px'],
+                btn: ['保存', '取消'],
+                btnAlign: 'c',
+                content: $('#setSecurity'),
+                btn1: function (index) {
+                    //TODO
+                    updateSecurity();
+                    layer.close(index);
+                    $("#setSecurityTable").empty();
+                },
+                btn2: function (index) {
+                    layer.close(index);
+                    $("#setSecurityTable").empty();
+                }
+            });
+        });
+    }
+
+    //修改安全设置
+    function updateSecurity() {
+        $.ajax({
+            async: false,
+            url: "/web/user/admin/setSecurity",
+            data: $("#setSecurityForm").serialize(),
+            type: "POST",
+            success: function (data) {
+                if (data.success) {
+                    tb.draw(false);
+                    layer.alert("安全配置成功", {
+                        icon: 1,
+                        title: '提示',
+                        closeBtn: 0,
+                        btnAlign: 'c',
+                    });
+                } else {
+                    layer.alert(data.message, {
+                        icon: 2,
+                        title: '提示',
+                        closeBtn: 0,
+                        btnAlign: 'c'
+                    });
+                }
+            }
+        });
+    }
+
+    function userFlow(userId, userName) {
+        var index = layer.open({
+            type: 2,
+            title: '账户流水',
+            closeBtn: 1,
+            area: ['100%', '100%'],
+            shade: 0,
+            btnAlign: 'c',
+            content: '/web/user/admin/balanceFlow/page?accountId=' + userId +"&userName=" + userName
+        });
+        layer.full(index);
+    }
+</script>
+</body>
+</html>

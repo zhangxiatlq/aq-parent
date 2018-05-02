@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>AQ智能管理系统</title>
+    <link rel="stylesheet" type="text/css" th:href="@{/static/css/models.css}">
+    <script type="text/javascript" th:src="@{/static/js/jquery-1.11.1.min.js}"></script>
+    <style>
+        .img {
+            margin-right: 10px;
+            height: 36px;
+            margin-top: 1px;
+        }
+
+        .img_pointer {
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+<!--登录-->
+<div class="loginBox">
+    <div class="loginCon" style="height: 480px">
+        <h2>AQ智能管理系统</h2>
+        <form id="formID" action="/doLogin" method="post">
+            <p class="loginTxt"><input class="validate[required]" name="employeeID" type="text"
+                                       placeholder="请输入登录账号(工号)"></p>
+            <p class="loginTxt"><input class="validate[required]" name="password" type="password" placeholder="请输入登录密码">
+            </p>
+             <div class="loginTxt">
+                  <input class="proving validate[required]" id="MsgCode" name="msgCode" type="text" placeholder="请输入验证码">
+                  <p class="provingImg"><img th:src="@{/loadverify}" class="get_yzm img img_pointer" alt="图片验证"
+                                             id="verify_codeid"></p>
+             </div>
+            <p class="loginBtn"><input name="loginBtn" id="loginBtn" type="button" value="登录"></p>
+        </form>
+
+        <P class="loginTxt" id="msg" th:if="${'' != msg}">
+            <span style="color: red" th:text="${msg}"></span>
+            <script type="text/javascript">
+                setTimeout('$("#msg").hide("slow")', 3000);
+            </script>
+        </P>
+    </div>
+</div>
+<!--end 登录-->
+</body>
+<script type="text/javascript" th:src="@{/static/js/layer/layer.js}"></script>
+<!-- 验证 -->
+<script type="text/javascript" th:src="@{/static/js/validat/jquery.validationEngine.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/validat/jquery.validationEngine-zh_CN.js}"></script>
+<script type="text/javascript">
+    $(function () {
+        $("#formID").validationEngine({
+            addPromptClass: 'formError-text',
+            showArrow: false,
+            promptPosition: 'bottomLeft:10 0'
+        });
+
+        loadVerifyCode();//加载验证码
+        //defhiden();
+        bingClosetipsIndex();
+        // 回车事件
+        document.onkeydown = function (e) {
+            var ev = document.all ? window.event : e;
+            if (ev.keyCode == 13) {
+                var flag = $("#formID").validationEngine("validate");
+                if (!flag) {
+                    return false;
+                }
+                //校验验证码
+                flag = checkCode();
+                if (!flag) {
+                    return false;
+                }
+                $("#formID").submit();
+            }
+        };
+
+        if (window != top) {
+            top.location.href = location.href;
+        }
+
+        $("input[type='employeeID'] ").val("");
+        $("input[type='password'] ").val("");
+
+        $("#loginBtn").click(function () {
+            var flag = $("#formID").validationEngine("validate");
+            if (!flag) {
+                return false;
+            }
+            //校验验证码
+            flag = checkCode();
+            if (!flag) {
+                return false;
+            }
+            $("#formID").submit();
+        });
+    });
+    
+    function checkCode() {
+        var code = $('#MsgCode').val();
+        var flag = false;
+        $.ajax({
+            async: false,
+            url: "/checkVerify",
+            data: {msgCode:code},
+            type: "GET",
+            dataType: "json",
+            success: function (data) {
+                flag = data.success;
+            }
+        });
+        if (!flag) {
+            $('#MsgCode').val('');
+            $('#msg span').text("验证码错误");
+            $('#msg').css('display', 'block');
+            setTimeout('$("#msg").hide("slow")', 3000);
+            loadVerifyCode();//加载验证码
+        }
+        return flag;
+    }
+
+    function defhiden() {
+        $('.img').css('display', 'none');
+        $('span.get_yzm').click(function () {
+            $(this).css('display', 'none');
+            $('.img').css('display', 'block');
+        });
+    }
+
+    //点击跟新验证码
+    $("#verify_codeid").click(function () {
+        loadVerifyCode();
+    });
+
+    function loadVerifyCode() {
+        var url = "/loadverify";
+        $("#verify_codeid").attr("src", url + "?" + Date.parse(new Date()));
+    }
+
+    //处理得到焦点后去掉提示
+    function bingClosetipsIndex() {
+        $('#login_user').on("focus", function () {
+            if (tipsIndex) {
+                layer.close(tipsIndex);
+            }
+        });
+        $('#login_pwd').on("focus", function () {
+            if (tipsIndex) {
+                layer.close(tipsIndex);
+            }
+        });
+        $('#verify_codeval').on("focus", function () {
+            if (tipsIndex) {
+                layer.close(tipsIndex);
+            }
+        });
+    }
+</script>
+</html>

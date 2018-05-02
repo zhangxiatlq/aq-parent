@@ -1,0 +1,509 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.AdviserMapper">
+    <!-- 投顾列表vo -->
+    <resultMap id="adviserListVO" type="com.aq.facade.vo.AdviserListVO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="publisherPhoto" property="publisherPhoto" jdbcType="VARCHAR"/>
+        <result column="publisherName" property="publisherName" jdbcType="VARCHAR"/>
+        <result column="adviserName" property="adviserName" jdbcType="VARCHAR"/>
+        <result column="adviserDesc" property="adviserDesc" jdbcType="VARCHAR"/>
+        <result column="beginDate" property="beginDate" jdbcType="TIMESTAMP"/>
+        <result column="price" property="price" jdbcType="DECIMAL"/>
+        <result column="purchaseState" property="purchaseState" jdbcType="TINYINT"/>
+        <result column="collectionState" property="collectionState" jdbcType="TINYINT"/>
+        <result column="collectionId" property="collectionId" jdbcType="INTEGER"/>
+        <result column="recommendId" property="recommendId" jdbcType="INTEGER"/>
+        <collection property="adviserPushQueryVOList" column="{purchaseState=purchaseState,id=id}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.AdviserPushQueryVO"
+                    select="listAdviserPushQueryVO"/>
+        <collection property="adviserTradeRecordQueryVOList" column="{id=id}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.AdviserTradeRecordQueryVO"
+                    select="listAdviserTradeRecordQueryVO"/>
+    </resultMap>
+
+    <!-- 投顾详情查询 -->
+    <resultMap id="adviserDetailVO" type="com.aq.facade.vo.AdviserDetailVO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="adviserName" property="adviserName" jdbcType="VARCHAR"/>
+        <result column="positionTotalCount" property="positionTotalCount" jdbcType="INTEGER"/>
+        <result column="pushTotalCount" property="pushTotalCount" jdbcType="INTEGER"/>
+        <result column="recommendTotalCount" property="recommendTotalCount" jdbcType="INTEGER"/>
+        <result column="purchaseTotalCount" property="purchaseTotalCount" jdbcType="INTEGER"/>
+        <collection property="adviserTradeRecordQueryVOList" column="{id=id,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.AdviserTradeRecordQueryVO"
+                    select="listAdviserTradeRecordQueryVO"/>
+        <collection property="adviserPositionVOList" column="{id=id,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.AdviserPositionVO"
+                    select="listAdviserPositionVO"/>
+        <collection property="adviserPushQueryVOList" column="{purchaseState=purchaseState,id=id,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.AdviserPushQueryVO"
+                    select="listAdviserPushQueryVO"/>
+        <collection property="adviserRecommendVOList" column="{id=id,managerId=managerId,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.AdviserRecommendVO"
+                    select="listAdviserRecommendVO"/>
+        <collection property="adviserPurchaseVOList"
+                    column="{id=id,managerId=managerId,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.AdviserPurchaseVO"
+                    select="listAdviserPurchaseVO"/>
+    </resultMap>
+
+    <!-- 客户经理 分页查询 投顾汇 列表 -->
+    <select id="listAdviserPage" resultMap="adviserListVO"
+            parameterType="com.aq.facade.dto.AdviserQueryDTO">
+        select aa.* from (SELECT
+        s.id,
+        am.url AS publisherPhoto,
+        s.adviserName,
+        s.adviserDesc,
+        s.createTime AS beginDate,
+        s.price,
+        sc.collectionState collectionState,
+        sc.id collectionId,
+        sr.id recommendId,
+        IF(s.createrId = #{managerId},2,IF(sp.expiryTime IS NULL,0,IF(datediff(sp.expiryTime,NOW())>0,1,0)))
+        purchaseState,
+        sp.expiryTime,
+        sp.id purchaseId,
+        s.createrId managerId
+        FROM
+        aq_adviser s
+        LEFT JOIN aq_manager am ON am.id = s.managerId
+        LEFT JOIN aq_adviser_collection sc ON s.id = sc.adviserId and sc.collectionerId = #{managerId} AND
+        sc.collectionerType = #{collectionerType}
+        LEFT JOIN aq_adviser_recommend sr ON sr.adviserId = s.id AND sr.isDelete = 2
+        LEFT JOIN aq_adviser_purchase sp ON sp.adviserId = s.id
+        AND sp.purchaserType = #{collectionerType}
+        AND sp.purchaserId = #{managerId}
+        WHERE
+        1=1 and s.isVisible = 1
+        <if test="customerId != null">
+            AND beRecommendedId = #{customerId}
+            AND beRecommendedRoleType = 2
+        </if>
+        <if test="collectionState != null">
+            AND sc.collectionState = #{collectionState}
+        </if>
+        <choose>
+            <when test="purchaseState !=null and purchaseState == 0">
+                and expiryTime is null
+            </when>
+            <when test="purchaseState !=null and purchaseState == 1">
+                and expiryTime is not null
+            </when>
+        </choose>
+        GROUP BY s.id) aa
+        <choose>
+            <when test="orderByContent==2">
+                left join ( SELECT
+                MIN(aatr.indexTime) minIndexTime,aatr.adviserId
+                FROM
+                aq_adviser_trade_record aatr
+                GROUP BY
+                aatr.adviserId ) bb on aa.id = bb.adviserId
+                <if test='orderType == "asc"'>
+                    order by bb.minIndexTime asc
+                </if>
+                <if test='orderType == "desc"  or orderType =="" or orderType == null'>
+                    order by bb.minIndexTime desc
+                </if>
+            </when>
+            <when test="orderByContent==3">
+                left join ( SELECT
+                strr.adviserId,
+                strr.todayRate
+                FROM
+                aq_adviser_trade_record strr
+                WHERE
+                id IN (
+                SELECT
+                MAX(aatr.id)
+                FROM
+                aq_adviser_trade_record aatr
+                GROUP BY
+                aatr.adviserId
+                ) ) bb on aa.id = bb.adviserId
+                <if test="orderType == 'asc'">
+                    order by bb.todayRate asc
+                </if>
+                <if test="orderType == 'desc'  or orderType =='' or orderType == null">
+                    order by bb.todayRate desc
+                </if>
+            </when>
+            <when test="orderByContent==4">
+                left join ( SELECT
+                strr.adviserId,
+                strr.cumulativeIncome
+                FROM
+                aq_adviser_trade_record strr
+                WHERE
+                id IN (
+                SELECT
+                MAX(aatr.id)
+                FROM
+                aq_adviser_trade_record aatr
+                GROUP BY
+                aatr.adviserId
+                ) ) bb on aa.id = bb.adviserId
+                <if test="orderType == 'asc'">
+                    order by bb.cumulativeIncome asc
+                </if>
+                <if test='orderType == "desc" or orderType =="" or orderType == null'>
+                    order by bb.cumulativeIncome desc
+                </if>
+            </when>
+            <otherwise>
+                left join ( SELECT
+                strr.adviserId,
+                strr.annualIncome
+                FROM
+                aq_adviser_trade_record strr
+                WHERE
+                id IN (
+                SELECT
+                MAX(aatr.id)
+                FROM
+                aq_adviser_trade_record aatr
+                GROUP BY
+                aatr.adviserId
+                )
+                ORDER BY
+                strr.annualIncome DESC ) bb on aa.id = bb.adviserId
+                <if test='orderType =="desc" or orderType =="" or orderType == null'>
+                    order by bb.annualIncome desc
+                </if>
+                <if test='orderType =="asc"'>
+                    order by bb.annualIncome asc
+                </if>
+            </otherwise>
+        </choose>
+
+    </select>
+
+    <!-- 投顾详情查询 -->
+    <select id="getAdviserDetailVO" parameterType="com.aq.facade.dto.AdviserDetailDTO"
+            resultMap="adviserDetailVO">
+        SELECT
+        s.id,
+        s.adviserName,
+        #{purchaserId} managerId,
+        1 purchaseState,
+        'true' isLimit,
+        (SELECT count(1) from aq_adviser_position where adviserId =#{adviserId}) positionTotalCount,
+        (SELECT count(1) from aq_adviser_push sp where adviserId =#{adviserId}) pushTotalCount,
+        (select count(1) from aq_adviser_recommend where isDelete=2 and recommendedId =#{purchaserId})
+        recommendTotalCount,
+        ( SELECT count(1) FROM aq_adviser_purchase sp LEFT JOIN aq_customer_manager cm ON cm.customerId = sp.purchaserId
+        WHERE sp.purchaserType = #{purchaserType} AND cm.managerId = #{purchaserId} AND sp.adviserId = #{adviserId} ) purchaseTotalCount
+        FROM
+        aq_adviser s
+        where id = #{adviserId}
+        order by s.createTime desc
+    </select>
+
+    <!-- 投顾指标记录 -->
+    <select id="listAdviserTradeRecordQueryVO" resultType="com.aq.facade.vo.AdviserTradeRecordQueryVO"
+            parameterType="java.util.Map">
+        SELECT
+        str.cumulativeIncome,
+        str.annualIncome,
+        str.indexTime,
+        str.maxRetracement,
+        str.returnRetracementRatio,
+        str.adviserPeriod,
+        str.sharpRate,
+        str.totalAssets,
+        str.availableAssets,
+        str.marketValue,
+        str.todayRate,
+        str.numericValue,
+        str.volatility,
+        str.todayRetracement
+        FROM
+        aq_adviser_trade_record str
+        where adviserId =#{id}
+        ORDER BY indexTime asc
+    </select>
+
+    <select id="listStrategyBenchmarkQueryVO" resultType="com.aq.facade.vo.StrategyBenchmarkQueryVO"
+            parameterType="java.util.Map">
+        SELECT
+        sb.type,
+        sb.benchmarkName,
+        sb.benchmarkNumber,
+        sb.source,
+        sb.strategyId
+        FROM
+        aq_strategy_benchmark sb
+        where strategyId =#{id} ORDER BY createTime asc
+    </select>
+
+    <!-- 投顾推送记录信息，只需要看成交了的状态 -->
+    <select id="listAdviserPushQueryVO" resultType="com.aq.facade.vo.AdviserPushQueryVO"
+            parameterType="java.util.Map">
+        SELECT
+        aap.sharesCode,
+        aap.sharesName,
+        aap.tradeTime,
+        aap.direction,
+        aap.tradeNumber,
+        aap.tradePrice,
+        aap.tradeTotalPrice,
+        aap.tradeStatus,
+        aap.realPrice
+        from aq_adviser_push aap
+        where aap.adviserId =#{id} AND aap.tradeStatus=1
+        and TO_DAYS(NOW()) - TO_DAYS(aap.tradeTime) >= IF (#{purchaseState} = 1 OR #{purchaseState} = 2, 0, 3)
+        ORDER BY aap.tradeTime desc
+        <if test="isLimit != null">
+            limit 20
+        </if>
+    </select>
+
+    <!-- 投顾推荐 -->
+    <select id="listAdviserRecommendVO" resultType="com.aq.facade.vo.AdviserRecommendVO"
+            parameterType="java.util.Map">
+        SELECT
+        sr.pushDate,
+        sr.id,
+        sr.pushPrice,
+        ac.realName beRecommendedName
+        FROM
+        aq_adviser_recommend sr
+        LEFT JOIN aq_customer ac ON ac.id = sr.beRecommendedId
+        WHERE
+        isDelete = 2
+        <if test="managerId != null">
+            and sr.recommendedId =#{managerId}
+        </if>
+        and sr.adviserId=#{id}
+        ORDER BY sr.createTime DESC
+        <if test="isLimit != null">
+            limit 20
+        </if>
+    </select>
+
+    <!-- 投顾购买记录 -->
+    <select id="listAdviserPurchaseVO" resultType="com.aq.facade.vo.AdviserPurchaseVO"
+            parameterType="java.util.Map">
+        SELECT
+        sp.expiryTime,
+        spt.createTime,
+        spt.payMoney purchaseMoney,
+        c.telphone purchaserTel
+        FROM
+        aq_adviser_purchase sp
+        LEFT JOIN aq_customer_manager cm ON cm.customerId = sp.purchaserId
+        LEFT JOIN aq_customer c ON c.id = cm.customerId
+        LEFT JOIN aq_adviser_order so ON so.adviserId = sp.adviserId
+        AND so.purchaserType =2
+        AND so.purchaserId = cm.customerId
+        LEFT JOIN aq_adviser_pay_trade spt on spt.orderId = so.id
+        WHERE
+        spt.payState = 1
+        and sp.purchaserType = 2
+        and sp.managerId = #{managerId}
+        <if test="customerId != null">
+            and sp.purchaserId = #{customerId}
+        </if>
+        <if test="managerId != null">
+            and cm.managerId = #{managerId}
+        </if>
+        and sp.adviserId = #{id}
+        ORDER BY sp.createTime DESC
+        <if test="isLimit != null">
+            limit 20
+        </if>
+    </select>
+
+    <!-- 投顾持仓list -->
+    <select id="listAdviserPositionVO" resultType="com.aq.facade.vo.AdviserPositionVO"
+            parameterType="java.util.Map">
+        SELECT
+        sharesCode,
+        sharesName,
+        holdingNo,
+        referenceCost,
+        referenceProfit,
+        profitRatio
+        FROM
+        aq_adviser_position
+        where adviserId =#{id} and holdingNo >0
+        ORDER BY holdingTime desc
+        <!--<if test="isLimit != null">
+            limit 20
+        </if>-->
+    </select>
+
+    <select id="listStrategysSelfSupportQueryVO" resultType="com.aq.facade.vo.StrategysSelfSupportQueryVO"
+            parameterType="com.aq.facade.dto.StrategysQueryDTO">
+        SELECT
+        s.id,
+        s.strategyName,
+        s.createTime,
+        s.price,
+        s.fileName,
+        userName,
+        pu.employeeID employeeID,
+        CASE
+        WHEN sr.beRecommendedRoleType = '2' THEN
+        '客户'
+        WHEN sr.beRecommendedRoleType = '3' THEN
+        '客户经理'
+        ELSE
+        '-'
+        END pushUser
+        FROM
+        aq_strategy s
+        LEFT JOIN aq_permission_user pu on pu.id = s.createId
+        LEFT JOIN aq_strategy_recommend sr on sr.strategyId = s.id and sr.recommendedId=0
+        where 1 = 1
+        <if test="strategyName !=null and strategyName !=''">
+            AND s.strategyName like CONCAT('%', #{strategyName},'%')
+        </if>
+        <if test="employeeID !=null and employeeID !=''">
+            AND pu.employeeID like CONCAT('%', #{employeeID},'%')
+        </if>
+        <if test="endDate !=null and endDate !=''">
+            AND date_format(s.createTime,'%Y-%m-%d') &lt;= #{endDate}
+        </if>
+        <if test="startDate !=null and startDate !=''">
+            AND date_format(s.createTime,'%Y-%m-%d') &gt;= #{startDate}
+        </if>
+        GROUP BY s.id
+        order by s.createTime desc
+    </select>
+
+    <!-- 投顾推送对象分页查询 -->
+    <select id="listAdviserPushVO" resultType="com.aq.facade.vo.AdviserPushQueryVO"
+            parameterType="com.aq.facade.dto.AdviserPushQueryDTO">
+        SELECT
+        *,
+        IFNULL((
+        SELECT
+        GROUP_CONCAT(beRecommendedId)
+        FROM
+        aq_adviser_recommend sr
+        WHERE
+        adviserId = #{adviserId}
+        AND beRecommendedRoleType = #{roleType}
+        AND recommendedId = 0
+        ),"") pushIds
+        FROM
+        (
+        SELECT
+        c.realName,
+        c.telphone,
+        c.id,
+        '2' roleType
+        FROM
+        aq_customer c
+        where c.openId is not NULL
+        UNION ALL
+        SELECT
+        m.realName,
+        m.telphone,
+        m.id,
+        '3' roleType
+        FROM
+        aq_manager m
+        where m.openId is not NULL
+        ) ttt
+        where 1 = 1
+        <if test="telphone !=null and telphone !=''">
+            AND ttt.telphone like CONCAT('%', #{telphone},'%')
+        </if>
+        <if test="realName !=null and realName !=''">
+            AND ttt.realName like CONCAT('%', #{realName},'%')
+        </if>
+        <if test="roleType !=null and roleType !=''">
+            AND ttt.roleType = #{roleType}
+        </if>
+    </select>
+
+    <!-- 获取投顾列表 -->
+    <select id="selectAdviserList" resultType="com.aq.facade.vo.AdviserPageVO"
+            parameterType="com.aq.facade.dto.AdviserPageDTO">
+        select a.id,a.adviserName,a.price,a.totalPrice,a.createTime,a.isVisible,
+        (select atr.indexTime FROM aq_adviser_trade_record atr WHERE a.id = atr.adviserId ORDER BY atr.indexTime asc limit 1) startTime
+        from aq_adviser a
+        <where>
+            <if test="adviserName != null and adviserName != ''">
+                a.adviserName LIKE concat('%',#{adviserName},'%')
+            </if>
+            <if test="createTimeStart != null and createTimeStart != ''">
+                AND a.createTime >= #{createTimeStart}
+            </if>
+            <if test="createTimeEnd != null and createTimeEnd != ''">
+                AND a.createTime &lt;= #{createTimeEnd}
+            </if>
+        </where>
+
+    </select>
+
+
+    <!--查询投顾详情-->
+    <select id="selectAdviserInfo" resultType="com.aq.facade.vo.AdviserInfoVO">
+        SELECT
+            a.id,
+            a.price,
+            FORMAT(a.totalPrice/10000,0) totalPrice,
+            a.adviserName,
+            (
+                SELECT
+                    COUNT(ap.id)
+                FROM
+                    aq_adviser_push ap
+                WHERE
+                    ap.adviserId = a.id
+            ) num,
+            a.isImport,
+            a.adviserDesc,
+            a.createrId managerId
+        FROM
+            aq_adviser a
+        WHERE
+            a.createrId = #{managerId} AND a.isDelete = 2
+    </select>
+
+    <!-- 修改投顾 -->
+    <update id="updateAdviserInfo" parameterType="com.aq.facade.dto.AdviseUpdateDTO">
+        UPDATE aq_adviser SET
+        price = #{price},
+        adviserName = #{adviserName},
+        adviserDesc = #{adviserDesc},
+        updaterId = #{managerId},
+        updateTime = now()
+        <if test="totalPrice != null">
+            ,totalPrice=#{totalPrice}
+        </if>
+        WHERE createrId = #{managerId}
+    </update>
+
+    <!--修改所有的导入字段-->
+    <update id="updateAdviserImport">
+        UPDATE aq_adviser SET
+        isImport = 1,
+        updateTime = now()
+    </update>
+
+
+    <!-- 实时刷新查询投顾今日收益数据 -->
+    <select id="listAdviserRefreshVO" parameterType="com.aq.facade.dto.AdviserListRefreshDTO"
+            resultType="com.aq.facade.vo.AdviserListRefreshVO">
+        SELECT str.adviserId,
+        str.todayRate
+        FROM
+        aq_adviser_trade_record str
+        where id IN (SELECT
+        MAX(strr.id)
+        FROM
+        aq_adviser_trade_record strr
+        where strr.adviserId IN
+        <foreach collection="adviserIds" index="index" item="list" open="(" close=")" separator=",">
+            #{list,jdbcType=BIGINT}
+        </foreach>
+        GROUP BY strr.adviserId
+        )
+    </select>
+</mapper>

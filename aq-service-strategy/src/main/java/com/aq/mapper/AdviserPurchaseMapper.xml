@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.AdviserPurchaseMapper">
+
+
+    <select id="listAdviserPurchaseVO" parameterType="com.aq.facade.dto.AdviserPurchaseDTO"
+            resultType="com.aq.facade.vo.AdviserPurchaseVO">
+        SELECT
+        sp.expiryTime,
+        sp.createTime,
+        <if test="purchaserType != null">
+            CONCAT(SUBSTR(purchaser.telphone,1,3),"***",SUBSTR(purchaser.telphone,9,3)) purchaserTel
+        </if>
+        FROM
+        aq_adviser_purchase sp
+        <if test="purchaserType == 3">
+            LEFT JOIN aq_manager purchaser on purchaser.id = sp.purchaserId
+        </if>
+        <if test="purchaserType == 2">
+            LEFT JOIN aq_customer purchaser on purchaser.id = sp.purchaserId
+        </if>
+        WHERE
+        1=1
+        <if test="purchaserId != null">
+            and sp.purchaserId = #{purchaserId,jdbcType=INTEGER}
+        </if>
+        <if test="adviserId != null">
+            and sp.adviserId=#{adviserId,jdbcType=INTEGER}
+        </if>
+        <if test="purchaserType != null">
+            and sp.purchaserType=#{purchaserType}
+        </if>
+        order by sp.createTime desc
+    </select>
+
+    <!-- 批量更新购买了的投顾续费 -->
+    <update id="updateRenewAdviserPurchase" parameterType="java.util.List">
+        UPDATE aq_adviser_purchase adp
+        SET adp.expiryTime = DATE_ADD(
+        adp.expiryTime,
+        INTERVAL 1 MONTH
+        ),
+        adp.updateTime = SYSDATE()
+        WHERE adp.id in
+        <foreach collection="list" index="index" item="item"
+                 separator="," open="(" close=")">
+            #{item.id,jdbcType=INTEGER}
+        </foreach>
+    </update>
+    
+    <update id="updateAdviserPurchase" parameterType="java.util.Map">
+        UPDATE aq_adviser_purchase adp
+        SET adp.expiryTime = #{expiryTime},
+        adp.updateTime = SYSDATE()
+        WHERE adp.purchaserId = #{purchaserId} and adp.purchaserType = #{purchaserType} and adp.adviserId = #{adviserId}
+    </update>
+</mapper>

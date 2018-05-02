@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.AuthUserMapper">
+    <!-- 分页获取客户列表信息 -->
+    <select id="getClientListByPage" parameterType="com.aq.facade.dto.SelectClientDTO"
+		resultType="com.aq.facade.vo.ClientListVO">
+        SELECT
+          au.id AS  'userId',
+          au.username AS  'username',
+		  CASE uup.vip_type
+          WHEN 1 THEN
+			'vip'
+		  WHEN 2 THEN
+			'超级vip'
+		  END AS 'vipType',
+ 		  uup.vip_end_time AS 'vipEndTime',
+	      super_manager_manager.managerName 'clientName',
+	      super_manager_manager.superName 'userNameEmployee',
+	      super_manager_manager.superEmployeeId 'employeeID',
+	      super_manager_manager.staffnum 'staffnum',
+ 		  uui.phonenum 'telphone',
+ 		  uui.`name` 'name',
+		  au.date_joined 'createTime'
+		  FROM
+			auth_user au
+		  INNER JOIN usermanage_userinfo uui ON uui.user_id = au.id AND uui.rolename=0
+		  LEFT JOIN usermanage_uservip uup ON uup.user_id = au.id
+		  LEFT JOIN usermanage_userrelation uu ON uu.userid_id = au.id
+		  LEFT JOIN (
+			SELECT
+			  manager_user.id manager_user_id,
+			  manager.`name` managerName,
+			  permission_user.userName superName,
+			  permission_user.employeeID superEmployeeId,
+			  manager.staffnum staffnum
+			FROM
+			usermanage_userinfo manager
+			LEFT JOIN auth_user manager_user ON manager_user.id = manager.user_id
+			LEFT JOIN aq_user_manager aum ON aum.userId = manager_user.id
+			LEFT JOIN aq_permission_user permission_user ON permission_user.id = aum.userId
+			WHERE
+				manager.rolename = 1
+				) super_manager_manager ON super_manager_manager.manager_user_id = uu.headid
+			WHERE
+			1 = 1
+			<if test="userName != null and userName != ''">
+				AND  au.username LIKE CONCAT('%', #{userName},'%')
+			</if>
+			<if test="telphone != null and telphone != ''">
+				AND  uui.phonenum LIKE CONCAT('%', #{telphone},'%')
+			</if>
+			<if test="staffnum != null and staffnum != ''">
+				AND  super_manager_manager.staffnum LIKE CONCAT('%', #{staffnum},'%')
+			</if>
+			<if test="employeeID != null and employeeID != ''">
+				AND  super_manager_manager.superEmployeeId LIKE CONCAT('%', #{employeeID},'%')
+			</if>
+    </select>
+    
+    <!-- 根据openId查询用户信息 -->
+    <select id="selectUserInfoByOpenId" parameterType="java.lang.String" resultType="com.aq.facade.vo.ClientUserInfoVO">
+		SELECT
+			b.id userId,
+			b.username userName,
+			a.phonenum telphone,
+			a.`name`,
+			c.vip_end_time 'expireTime',
+			c.`status`,
+		top.headid ascriptionId,
+		a.rolename rolename
+		FROM
+			usermanage_userinfo a
+		LEFT JOIN usermanage_userrelation top ON a.user_id = top.userid_id
+		LEFT JOIN auth_user b ON b.id = a.user_id
+		LEFT JOIN usermanage_uservip c ON b.id = c.user_id
+		WHERE
+			a.openid = #{openId}
+    </select>
+
+	<!--获取客户详情信息-->
+	<select id="getClientDetail" parameterType="com.aq.facade.dto.SelectClientDTO"
+			resultType="com.aq.facade.vo.ClientDetailVO">
+		SELECT
+		au.id AS id,
+		au.username AS username,
+		uui.phonenum AS telphone,
+		uui.staffnum AS staffnum,
+		uui. NAME AS NAME,
+		uui.fortunellavenosa AS accout,
+		uui.remark AS remark,
+		uul.headid AS headid,
+		aum.userId AS userId,
+		apu.userName AS employeeName,
+		(SELECT uui.`name` from usermanage_userinfo uui where uui.user_id = uul.headid) AS managerName
+		FROM
+
+		auth_user au
+		INNER JOIN usermanage_userinfo uui ON au.id = uui.user_id AND uui.rolename = 0
+		LEFT JOIN usermanage_userrelation uul ON uul.userid_id = au.id
+		LEFT JOIN aq_user_manager aum ON aum.managerId = uul.headid
+		LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+		WHERE
+		1 = 1
+			<if test="id != null and id != ''">
+				AND au.id = #{id}
+			</if>
+	</select>
+
+	<!-- 翻页获取客户经理列表信息 -->
+	<select id="getManagerListByPage" parameterType="com.aq.facade.dto.manage.SelectManagerDTO"
+	resultType="com.aq.facade.vo.manage.ManagerListVO">
+		SELECT
+			au.id AS userId,
+			au.username AS username,
+			uui.phonenum AS telphone,
+			uui.staffnum AS staffnum,
+			uui.`name` AS name,
+			apu.employeeID AS 'employeeID',
+			apu.userName AS employName,
+			au.date_joined 'createTime'
+		FROM
+			auth_user au
+		INNER JOIN usermanage_userinfo uui ON au.id = uui.user_id AND uui.rolename = 1
+		LEFT JOIN aq_user_manager aum ON au.id = aum.managerId
+		LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+		WHERE
+		1 =1
+		<if test="username != null and username != ''">
+			AND  au.username LIKE CONCAT('%', #{username},'%')
+		</if>
+		<if test="telphone != null and telphone != ''">
+			AND  uui.phonenum LIKE CONCAT('%', #{telphone},'%')
+		</if>
+		<if test="employID != null and employID != ''">
+			AND  apu.employeeID LIKE CONCAT('%', #{employID},'%')
+		</if>
+	</select>
+
+	<!-- 后台获取客户经理详情信息 -->
+	<select id="getManagerDetail" parameterType="com.aq.facade.dto.manage.SelectManagerDTO"
+			resultType="com.aq.facade.vo.ManagerDetailVO">
+		  SELECT
+		  	au.id AS id,
+		  	au.username AS username,
+		  	uui.phonenum AS telphone,
+		  	uui.staffnum AS staffnum,
+		  	uui.`name` AS name,
+		  	uui.fortunellavenosa AS fortunellavenosa,
+		  	apu.employeeID AS employeeID,
+		  	apu.userName AS employName,
+		  	uui.remark AS remark
+		  FROM
+		  	auth_user au
+		  INNER JOIN usermanage_userinfo uui ON au.id = uui.user_id AND uui.rolename = 1
+		  LEFT JOIN aq_user_manager aum ON au.id = aum.managerId
+		  LEFT JOIN aq_permission_user apu ON apu.id = aum.userId
+		  WHERE
+		  1=1
+		  <if test="id != null and id!= ''">
+			  AND au.id = #{id}
+		  </if>
+	</select>
+
+	<!-- 获取所有客户经理数据 -->
+	<select id="getAllManager" parameterType="com.aq.facade.dto.manage.SelectManagerDTO"
+			resultType="com.aq.facade.vo.manage.ManagerListVO">
+		SELECT
+		au.id AS userId,
+		au.username AS username,
+		uui.phonenum AS telphone,
+		uui.staffnum AS staffnum,
+		uui.`name` AS name,
+		'' AS employeeID,
+		'' AS employName,
+		au.date_joined AS 'createTime'
+		FROM
+		usermanage_userinfo uui, auth_user au
+		WHERE
+ 		au.id = uui.user_id AND uui.rolename = 1
+	</select>
+</mapper>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.StrategyOrderMapper">
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.StrategyOrder">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="recommendId" property="recommendId" jdbcType="INTEGER"/>
+        <result column="orderId" property="orderId" jdbcType="VARCHAR"/>
+        <result column="orderState" property="orderState" jdbcType="TINYINT"/>
+        <result column="payType" property="payType" jdbcType="TINYINT"/>
+        <result column="purchaserId" property="purchaserId" jdbcType="INTEGER"/>
+        <result column="purchaserType" property="purchaserType" jdbcType="TINYINT"/>
+        <result column="purchaseTime" property="purchaseTime" jdbcType="TIMESTAMP"/>
+        <result column="purchasePrice" property="purchasePrice" jdbcType="DECIMAL"/>
+        <result column="purchaseMoney" property="purchaseMoney" jdbcType="DECIMAL"/>
+        <result column="remark" property="remark" jdbcType="VARCHAR"/>
+        <result column="updateTime" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, recommendId, orderId, orderState, payType, purchaserId, purchaserType, purchaseTime, 
+        purchasePrice, purchaseMoney, remark, updateTime, createTime
+    </sql>
+
+    <sql id="where_cause">
+        update strategy_order
+        <set>
+            <if test="recommendId != null">
+                recommendId = #{recommendId,jdbcType=INTEGER},
+            </if>
+            <if test="orderId != null">
+                orderId = #{orderId,jdbcType=VARCHAR},
+            </if>
+            <if test="orderState != null">
+                orderState = #{orderState,jdbcType=TINYINT},
+            </if>
+            <if test="payType != null">
+                payType = #{payType,jdbcType=TINYINT},
+            </if>
+            <if test="purchaserId != null">
+                purchaserId = #{purchaserId,jdbcType=INTEGER},
+            </if>
+            <if test="purchaserType != null">
+                purchaserType = #{purchaserType,jdbcType=TINYINT},
+            </if>
+            <if test="purchaseTime != null">
+                purchaseTime = #{purchaseTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="purchasePrice != null">
+                purchasePrice = #{purchasePrice,jdbcType=DECIMAL},
+            </if>
+            <if test="purchaseMoney != null">
+                purchaseMoney = #{purchaseMoney,jdbcType=DECIMAL},
+            </if>
+            <if test="remark != null">
+                remark = #{remark,jdbcType=VARCHAR},
+            </if>
+            <if test="updateTime != null">
+                updateTime = #{updateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="createTime != null">
+                createTime = #{createTime,jdbcType=TIMESTAMP},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </sql>
+
+</mapper>

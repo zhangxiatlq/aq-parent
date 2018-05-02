@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <title>用户策略</title>
+    <!--bootstrap-select  css文件-->
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/bootstrapselect/css/bootstrap-select.css}">
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/bootstrapselect/css/bootstrap.min.css}">
+    <!--日期  css文件-->
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/datepicker/css/bootstrap-datepicker.css}">
+    <!--弹窗 css文件-->
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/layer/layer.css}">
+    <!--主要css样式-->
+    <link rel="stylesheet" th:href="@{/static/css/models.css}">
+</head>
+<body>
+<div class="MainContent">
+    <!--主体内容-->
+    <div class="MainCont">
+        <!--筛选条件-->
+        <div class="screen" style="padding-top: 0;">
+            <form id="formID">
+                <table class="tableBox">
+                    <tr>
+                        <th>策略名称：</th>
+                        <td><input id="strategyName" type="text"></td>
+                        <th>用户手机号：</th>
+                        <td><input id="phonenum" type="text"></td>
+                        <th>提交日期：</th>
+                        <td colspan="2"><p class="dayBox">
+                            <input class="start_rise date start" id="startDate" type="text">&nbsp;-&nbsp;
+                            <input class="start_rise date end" id="endDate" type="text"></p></td>
+                    </tr>
+                    <tr>
+                        <th>审核状态：</th>
+                        <td>
+                            <select class="selectpicker" id="auditStatus">
+                                <option value="">全部</option>
+                                <option value="3">待审核</option>
+                                <option value="1">通过</option>
+                                <option value="2">未通过</option>
+                            </select>
+                        </td>
+                        <td colspan="4">
+                            <shiro:hasPermission name="userStrategyQuery">
+                                <input onclick="query();" type="button" value="查询">
+                            </shiro:hasPermission>
+                            <input onclick="reseter();" type="button" value="重置">
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+        <!--end 筛选条件-->
+        <!--商品列表-->
+        <div class="wareBox tabScroll">
+            <table class="wareList" id="example"></table>
+        </div>
+        <!--end 商品列表-->
+    </div>
+    <!--end 主体内容-->
+</div>
+<!--下载策略文件弹窗-->
+<div class="PopupBox" id="strategyFileBox">
+    <!--内容-->
+    <div class="PopupCon">
+        <ul class="addList">
+            <li>
+                <label for=""><span class="require">*</span>策略名称：</label>
+                <input class="memberTxt validate[required]" name="" type="text" placeholder="策略名称">
+            </li>
+        </ul>
+    </div>
+    <!--end 内容-->
+</div>
+<!--end 下载策略文件弹窗-->
+<!--审核弹窗-->
+<div class="PopupBox" id="AuditingBox" data-layer-h="330px" data-layer-title="审核策略" data-layer-w="500px">
+    <!--内容-->
+    <div class="ph_subPoCon">
+        <form id="auditStrategys" data-submit-url="/web/strategys/auditStrategys">
+            <ul class="addList" style="width: 80%;">
+                <li>
+                    <span class="adoptList">
+                        <input class="radioVal" id="adopt" name="auditStatus" type="radio" value="1">
+                        <label class="adoptRadio" for="adopt">通过审核</label>
+                    </span>
+                    <span class="adoptList">
+                        <input class="radioVal" id="NoAdopt" name="auditStatus" type="radio" value="2" checked="checked">
+                        <label class="adoptRadio" for="NoAdopt">不通过审核</label>
+                    </span>
+                </li>
+                <li class="textareaShow">
+                    <textarea class="validate[required,maxSize[100]] txtAreaBg" name="cause" cols="30" rows="10" placeholder="不通过原因，不超过100个字符"></textarea>
+                </li>
+                <input type="hidden" name="trademodelStrategysId" id="trademodelStrategysId">
+            </ul>
+        </form>
+    </div>
+    <!--end 内容-->
+</div>
+<!--end 审核弹窗-->
+<script type="text/javascript" th:src="@{/static/js/jquery-1.11.1.min.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/index.js}"></script>
+<!--bootstrap-select-->
+<script type="text/javascript" th:src="@{/static/js/bootstrapselect/bootstrap.min.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/bootstrapselect/bootstrap-select.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/bootstrapselect/select.js}"></script>
+<!--日期控件-->
+<script type="text/javascript" th:src="@{/static/js/datepicker/bootstrap-datepicker.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/datepicker/jquery.timepicker.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/datepicker/jquery.datepair.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/datepicker/datepicker.js}"></script>
+<!--验证-->
+<script type="text/javascript" th:src="@{/static/js/validat/jquery.validationEngine-zh_CN.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/validat/jquery.validationEngine.js}"></script>
+<!--分页-->
+<script type="text/javascript" th:src="@{/static/js/pages/jquery.dataTables.min.js}"></script>
+<!--弹窗-->
+<script type="text/javascript" th:src="@{/static/js/layer/layer.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/common/htmlHelper.js}"></script>
+<!--layui-->
+<script th:inline="javascript">
+    var tb;
+    $(function () {
+        //验证
+        $("#formID").validationEngine({
+            addPromptClass: 'formError-text',
+            showArrow: false,
+            promptPosition: 'bottomLeft:10 0'
+        });
+        $("#formID_a").validationEngine({
+            addPromptClass: 'formError-text',
+            showArrow: false,
+            promptPosition: 'bottomLeft:10 0'
+        });
+
+        $('.addList').on('click', '.radioVal', function () {
+            var radioVal = $(this).val();
+            if (parseInt(radioVal) == 1) {
+                $('.textareaShow').hide()
+            } else {
+                $('.textareaShow').show()
+            }
+        });
+        //table数据列表
+        tb = $('#example').DataTable({
+            "bServerSide": true,
+            "sPaginationType": "full_numbers",
+            //"bJQueryUI": true,
+            "sDom": '<"">t<"F"ip>',
+            "autoWidth": false,  //自适应宽度
+            //"sAjaxSource": "${ctx}/api/user/list", //ajax调用接口
+            //<div class="btn-group" style="text-align:left;"><button type="button" class="btn btn-info dropdown-toggle"data-toggle="dropdown">操作 <span class="caret"></span></button>
+            "sAjaxSource": "/web/strategys/pageStrategysUserQueryVO", //ajax调用接口
+            "aoColumnDefs": [{sDefaultContent: '', orderable: false, aTargets: ['_all']}],
+            "aoColumns": [
+//                /*{ "sWidth": "30px","sTitle" : "<input class= \"check-all\" name=\"\" type=\"checkbox\">", "mData": "id","mRender": function(){
+//                    return '<input class="ids" name="" type="checkbox">';
+//                }},*/
+                {"sWidth": "50px", "sTitle": "序号", "mData": "id"},
+                {"sTitle": "策略名称", "mData": "strategyName"},
+                {"sTitle": "策略价格", "mData": "price"},
+                {"sTitle": "用户姓名", "mData": "userName"},
+                {"sTitle": "用户手机号", "mData": "phonenum"},
+                {"sTitle": "提交时间", "mData": "createDate"},
+                {
+                    "sTitle": "审核状态", "mData": "auditStatus", "mRender": function (data, type, full) {
+                    return data == 3 ? "待审核" : data == 1 ? "通过" : "未通过";
+                }
+                },
+                {
+                    "sWidth": "110px",
+                    "sTitle": "操作",
+                    "mData": "id",
+                    "sClass": "ph_tableShow",
+                    "mRender": function (data, type, full) {
+                        var text = '<div class="operateBox"><input class="operate" name="" type="button" value="操作选项">';
+                        text += '<ul class="operateList hide" role="menu">';
+                        if (full.auditStatus == 3) {
+                            if ([[${session.userStrategyAudit}]]) {
+                                text += '<li><a class="js_Auditing" href="javascript:void(0);"  onclick="audit(' + data + ')">审核</a></li>';
+                            }
+                        }
+                        text += '<li><a target="_blank"  href="/web/strategys/download?fileName=' + full.content + '">策略文件</a></li>';
+                        text += '</ul></div>';
+                        return text;
+                    }
+                }
+            ],
+            "oLanguage": {
+                "sProcessing": "数据加载中······",
+                "sLengthMenu": "显示 _MENU_ 条记录",
+                "sZeroRecords": "没有您要搜索的内容！",
+                "sEmptyTable": "列表中无数据存在！",
+                "sInfo": "当前显示 _START_ 到 _END_ 条数据，共 _TOTAL_ 条数据",
+                "sInfoEmpty": "显示 0 到 0 条记录",
+                "sInfoFiltered": "数据列表中共  _MAX_ 条记录",
+                "oPaginate": {
+                    "sFirst": "首页",
+                    "sPrevious": "上一页",
+                    "sNext": "下一页",
+                    "sLast": "末页"
+                }
+            },
+            "fnServerData": function (sSource, aoData, fnCallback, oSettings) {
+                oSettings.jqXHR = $.ajax({
+                    "dataType": 'json',
+                    "type": "GET",
+                    "async": 'false',
+                    "url": sSource,
+                    "data": {
+                        'pageNum': (aoData[3].value / aoData[4].value) + 1,
+                        'pageSize': aoData[4].value,
+                        'strategyName': $('#strategyName').val(),
+                        'phonenum': $('#phonenum').val(),
+                        'startDate': $('#startDate').val(),
+                        'endDate': $('#endDate').val(),
+                        'auditStatus': $('#auditStatus').val()
+                    },
+                    "success": fnCallback
+                });
+            },
+            "fnDrawCallback": function () {
+                var api = this.api();
+                var startIndex = api.context[0]._iDisplayStart;//获取到本页开始的条数
+                api.column(0).nodes().each(function (cell, i) {
+                    cell.innerHTML = startIndex + i + 1;
+                });
+            }
+        });
+    });
+
+    function audit(auditId) {
+        $("#trademodelStrategysId").val(auditId);
+        HtmlHelper.layerSubmit({
+            area: ['500px', '330px'],
+            content: "AuditingBox",
+            formId: 'auditStrategys',
+            ajaxBackFun: function (data, layerIndex, opt) {
+                layer.alert(data.message);
+                if (data.success) {
+                    layer.close(layerIndex);
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 1000);
+                }
+            }
+        })
+
+    }
+
+    //条件查询重新加载数据
+    function query() {
+        tb.draw();
+    }
+
+    //重置
+    function reseter() {
+        $("#formID")[0].reset();
+        $("#auditStatus").selectpicker('val', '');
+    }
+
+</script>
+</body>
+</html>

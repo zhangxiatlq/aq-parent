@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.StrategyTradeRecordMapper">
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.StrategyTradeRecord">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="strategyId" property="strategyId" jdbcType="INTEGER"/>
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="createId" property="createId" jdbcType="INTEGER"/>
+        <result column="cumulativeIncome" property="cumulativeIncome" jdbcType="DECIMAL"/>
+        <result column="annualIncome" property="annualIncome" jdbcType="DECIMAL"/>
+        <result column="maxRetracement" property="maxRetracement" jdbcType="DECIMAL"/>
+        <result column="returnRetracementRatio" property="returnRetracementRatio" jdbcType="DECIMAL"/>
+        <result column="strategyPeriod" property="strategyPeriod" jdbcType="DECIMAL"/>
+        <result column="sharpRate" property="sharpRate" jdbcType="DECIMAL"/>
+        <result column="totalAssets" property="totalAssets" jdbcType="DECIMAL"/>
+        <result column="availableAssets" property="availableAssets" jdbcType="DECIMAL"/>
+        <result column="marketValue" property="marketValue" jdbcType="DECIMAL"/>
+        <result column="todayRate" property="todayRate" jdbcType="DECIMAL"/>
+        <result column="numericValue" property="numericValue" jdbcType="DECIMAL"/>
+        <result column="volatility" property="volatility" jdbcType="DECIMAL"/>
+        <result column="todayRetracement" property="todayRetracement" jdbcType="DECIMAL"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, strategyId, createTime, createId, cumulativeIncome, annualIncome, maxRetracement, 
+        returnRetracementRatio, strategyPeriod, sharpRate, totalAssets, availableAssets, 
+        marketValue, todayRate, numericValue, volatility, todayRetracement
+    </sql>
+
+
+    <sql id="11">
+        update strategy_trade_record
+        <set>
+            <if test="strategyId != null">
+                strategyId = #{strategyId,jdbcType=INTEGER},
+            </if>
+            <if test="createTime != null">
+                createTime = #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="createId != null">
+                createId = #{createId,jdbcType=INTEGER},
+            </if>
+            <if test="cumulativeIncome != null">
+                cumulativeIncome = #{cumulativeIncome,jdbcType=DECIMAL},
+            </if>
+            <if test="annualIncome != null">
+                annualIncome = #{annualIncome,jdbcType=DECIMAL},
+            </if>
+            <if test="maxRetracement != null">
+                maxRetracement = #{maxRetracement,jdbcType=DECIMAL},
+            </if>
+            <if test="returnRetracementRatio != null">
+                returnRetracementRatio = #{returnRetracementRatio,jdbcType=DECIMAL},
+            </if>
+            <if test="strategyPeriod != null">
+                strategyPeriod = #{strategyPeriod,jdbcType=DECIMAL},
+            </if>
+            <if test="sharpRate != null">
+                sharpRate = #{sharpRate,jdbcType=DECIMAL},
+            </if>
+            <if test="totalAssets != null">
+                totalAssets = #{totalAssets,jdbcType=DECIMAL},
+            </if>
+            <if test="availableAssets != null">
+                availableAssets = #{availableAssets,jdbcType=DECIMAL},
+            </if>
+            <if test="marketValue != null">
+                marketValue = #{marketValue,jdbcType=DECIMAL},
+            </if>
+            <if test="todayRate != null">
+                todayRate = #{todayRate,jdbcType=DECIMAL},
+            </if>
+            <if test="numericValue != null">
+                numericValue = #{numericValue,jdbcType=DECIMAL},
+            </if>
+            <if test="volatility != null">
+                volatility = #{volatility,jdbcType=DECIMAL},
+            </if>
+            <if test="todayRetracement != null">
+                todayRetracement = #{todayRetracement,jdbcType=DECIMAL},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </sql>
+
+</mapper>

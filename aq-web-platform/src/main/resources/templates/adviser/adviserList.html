@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <meta charset="UTF-8">
+    <title>投顾列表</title>
+    <!--bootstrap-select  css文件-->
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/bootstrapselect/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/bootstrapselect/css/bootstrap-select.css}"/>
+    <!--弹窗 css文件-->
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/layer/layer.css}">
+    <!--主要css样式-->
+    <link rel="stylesheet" type="text/css" th:href="@{/static/css/models.css}">
+    <!--文件树插件 css文件-->
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/ztree/zTreeStyle.css}">
+    <!--日期  css文件-->
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/datepicker/css/bootstrap-datepicker.css}">
+    <style>
+        .addList li .bootstrap-select.btn-group:not(.input-group-btn), .addList li .bootstrap-select.btn-group[class*="col-"] {
+            float: left;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div class="MainContent">
+    <!--主体内容-->
+    <div class="MainCont">
+        <!--筛选条件-->
+        <form id="queryForm">
+            <div class="screen" style="padding-top: 0;">
+                <shiro:hasPermission name="clientList">
+                    <table class="tableBox">
+                        <tr>
+                            <th>投顾名称：</th>
+                            <td><input type="text" name="adviserName" id="adviserName"/></td>
+                            <th>创建日期：</th>
+                            <td><p class="dayBox">
+                                <input class="start_rise date start" id="createTimeStart" name="" type="text">&nbsp;-&nbsp;
+                                <input class="start_rise date end" id="createTimeEnd" name="" type="text"></p>
+                            </td>
+
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <input name="" type="button" th:onclick="'query();'" value="查询">
+                                <input name="" type="button" th:onclick="'resetForm();'" value="重置条件">
+                            </td>
+                        </tr>
+                    </table>
+                </shiro:hasPermission>
+            </div>
+        </form>
+        <!--end 筛选条件-->
+        <!--商品列表-->
+        <div class="wareBox ph_tabScroll">
+            <table class="wareList" id="example"></table>
+        </div>
+        <!--end 商品列表-->
+    </div>
+    <!--end 主体内容-->
+</div>
+
+<script type="text/javascript" th:src="@{/static/js/jquery-1.11.1.min.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/index.js}"></script>
+<!--bootstrap-select-->
+<script type="text/javascript" th:src="@{/static/js/bootstrapselect/bootstrap.min.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/bootstrapselect/bootstrap-select.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/bootstrapselect/select.js}"></script>
+<!--验证-->
+<script type="text/javascript" th:src="@{/static/js/validat/jquery.validationEngine-zh_CN.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/validat/jquery.validationEngine.js}"></script>
+<!--分页-->
+<script type="text/javascript" th:src="@{/static/js/pages/jquery.dataTables.min.js}"></script>
+<!--文件树插件-->
+<script type="text/javascript" th:src="@{/static/js/ztree/jquery.ztree.core.min.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/ztree/jquery.ztree.excheck.min.js}"></script>
+<!--弹窗-->
+<script type="text/javascript" th:src="@{/static/js/layer/layer.js}"></script>
+<!--日期控件-->
+<script type="text/javascript" th:src="@{/static/js/datepicker/bootstrap-datepicker.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/datepicker/jquery.timepicker.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/datepicker/jquery.datepair.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/datepicker/datepicker.js}"></script>
+<script type="text/javascript" th:inline="javascript">
+    var tb;
+    $(function () {
+        //验证
+        $("#formID").validationEngine({
+            addPromptClass: 'formError-text',
+            showArrow: false,
+            promptPosition: 'bottomLeft:10 0'
+        });
+        //编辑客户
+//        $('.wareList').on('click', '.js_Edit', function () {
+//            layer.open({
+//                type: 1,
+//                title: '客户详情',
+//                closeBtn: 1,
+//                area: ['700px', 'auto'],
+//                //maxmin: true,
+//                btn: ['保存', '取消'],
+//                btnAlign: 'c',
+//                content: $('#editBox')
+//            });
+//        });
+        // 客户详情
+//        $('.wareList').on('click', '.Js_Details', function () {
+//
+//        });
+        //重置密码
+        $('.wareList').on('click', '.js_Reset', function () {
+            layer.confirm('重置密码为手机号后6位？', {
+                title: '重置密码',
+                icon: 8,
+                btnAlign: 'c',
+                btn: ['确认重置', '取消'],
+                closeBtn: 0
+            }, function (index) {
+                layer.alert('操作成功', {icon: 1, btnAlign: 'c', closeBtn: 0});
+                //layer.close(index);
+            })
+        });
+        //策略管理
+//        $('.wareList').on('click', '.js_Strategy', function () {
+//
+//        });
+        tb = $('#example').DataTable({
+            "bServerSide": true,
+            "sPaginationType": "full_numbers",
+            //"bJQueryUI": true,
+            "sDom": '<"">t<"F"ip>',
+            "autoWidth": false,  //自适应宽度
+            "sAjaxSource": "/web/adviser/list", //ajax调用接口
+            //<div class="btn-group" style="text-align:left;"><button type="button" class="btn btn-info dropdown-toggle"data-toggle="dropdown">操作 <span class="caret"></span></button>
+//            "sAjaxSource": "data/arrays.txt", //ajax调用接口
+            "aoColumnDefs": [{sDefaultContent: '', orderable: false, aTargets: ['_all']}],
+            "aoColumns": [
+//                {
+//                    "sWidth": "30px",
+//                    "sTitle": "<input class= \"check-all\" name=\"\" type=\"checkbox\">",
+//                    "mData": "id",
+//                    "mRender": function () {
+//                        return '<input class="ids" name="" type="checkbox">';
+//                    }
+//                },
+                {"sWidth": "50px", "sTitle": "序号", "mData": "id"},
+                {"sTitle": "创建日期", "mData": "createTime" },
+                {"sTitle": "投顾名称", "mData": "adviserName" },
+                {"sTitle": "开始日期", "mData": "startTime" },
+                {"sTitle": "分享价格", "mData": "price" },
+                {"sTitle": "初始资金", "mData": "totalPrice" },
+                {"sTitle": "显示状态", "mData": "totalPrice","mRender":function (data,type,full) {
+                        var text = "--";
+                        if (full.isVisible==2){
+                            text="不显示";
+                        }else {
+                            text = "显示";
+
+                        }
+                        return text;
+                    }},
+                {
+                    "sWidth": "110px",
+                    "sTitle": "操作",
+                    "mData": "id",
+                    "sClass": "ph_tableShow",
+                    "mRender": function (data, type, full) {
+                        var text = '<div class="operateBox"><input class="operate" name="" type="button" value="操作选项">';
+                        text += '<ul class="operateList hide" role="menu">';
+                        if ([[${session.adviserIsVisible}]]) {
+                            if (full.isVisible==1){
+                                text += '<li><a class="js_Edit" href="javascript:void(0);" onclick="toIsVisible(\'' + full.id +'\','+'\'2\''+');">不显示</a></li>';
+                            }
+                            if (full.isVisible==2){
+                                text += '<li><a class="js_Edit" href="javascript:void(0);" onclick="toIsVisible(\'' + full.id +'\','+'\'1\''+');">显示</a></li>';
+                            }
+                        }
+                        text += '</ul></div>';
+                        return text;
+                    }
+                }
+            ],
+            "oLanguage": {
+                "sProcessing": "数据加载中······",
+                "sLengthMenu": "显示 _MENU_ 条记录",
+                "sZeroRecords": "没有您要搜索的内容！",
+                "sEmptyTable": "列表中无数据存在！",
+                "sInfo": "当前显示 _START_ 到 _END_ 条数据，共 _TOTAL_ 条数据",
+                "sInfoEmpty": "显示 0 到 0 条记录",
+                "sInfoFiltered": "数据列表中共  _MAX_ 条记录",
+                "oPaginate": {
+                    "sFirst": "首页",
+                    "sPrevious": "上一页",
+                    "sNext": "下一页",
+                    "sLast": "末页"
+                }
+            },
+            "fnServerData" : function ( sSource, aoData, fnCallback, oSettings ) {
+               oSettings.jqXHR = $.ajax( {
+                   "dataType" 	: 'json',
+                   "type" 		: "GET",
+                   "async"     : 'false',
+                   "url" 		: sSource,
+                   "data" 		: {
+                       'pageNum': (aoData[3].value/aoData[4].value)+1,
+                       'pageSize' :  aoData[4].value,
+                       'adviserName'  :  $.trim($("#adviserName").val()),
+                       'createTimeStart'  :  $.trim($("#createTimeStart").val()),
+                       'createTimeEnd'  :  $.trim($("#createTimeEnd").val())
+                   },
+                   "success"	: fnCallback
+               } );
+           },
+            "fnDrawCallback" : function(){
+            var api = this.api();
+            var startIndex= api.context[0]._iDisplayStart;//获取到本页开始的条数
+            api.column(0).nodes().each(function(cell, i) {
+                cell.innerHTML = startIndex + i + 1;
+            });
+        }
+        });
+    });
+
+    //条件查询重新加载数据
+    function query() {
+        tb.draw();
+    }
+
+    /**
+     * 重置内容
+     */
+    //重置查询条件--star
+    function resetForm() {
+        clearData("queryForm");
+    }
+    function clearData(id) {
+        $("#" + id)[0].reset();
+        var selected = $("#" + id).find("select");
+        if (selected.length > 0) {
+            for (var i = 0, length = selected.length; i< length; i++) {
+                selected.eq(i).selectpicker('val','');
+            }
+        }
+    }
+    //重置查询条件-end
+    /**
+     * @auth: zhangxia
+     * @desc: 投顾是否显示
+     * @createTime: 2018/4/13 11:41
+     * @version:2.1.6
+     */
+    function toIsVisible(adviserId,isVisible) {
+        $.ajax({
+            async:false,
+            url:"/web/adviser/isVisible",
+            data:{"id":adviserId,"isVisible":isVisible},
+            type:"POST",
+            dataType:"json",
+            success:function(data){
+                if (data.success) {
+                    tb.draw(false);
+                    layer.alert(data.message, {icon: 1,btnAlign: 'c', closeBtn : 0});
+                } else {
+                    layer.alert(data.message, {icon: 2,btnAlign: 'c', closeBtn : 0});
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+server:
+  port: 9090
+
+spring:
+   profiles:
+     active: dev
+---
+spring:
+  profiles: dev
+
+  #redis相关配置
+  redis:
+    host: 127.0.0.1
+    database: 0
+    port: 6379
+    password:
+    timeout: 60000
+    pool:
+      max-wait: -1
+      max-idle: 500
+      min-idle: 0
+
+---
+spring:
+  profiles: test
+  #redis相关配置
+  redis:
+    host: 192.168.1.248
+    database: 0
+    port: 6379
+    password: 13579qaz
+    timeout: 60000
+    pool:
+      max-wait: -1
+      max-idle: 500
+      min-idle: 0
+
+---
+spring:
+  profiles: prod-test
+  #redis相关配置
+  redis:
+    host: 127.0.0.1
+    database: 0
+    port: 6379
+    password: Z7ztUjWv
+    timeout: 60000
+    pool:
+      max-wait: -1
+      max-idle: 500
+      min-idle: 0
+
+---
+spring:
+  profiles: prod
+  #redis相关配置
+  redis:
+    host: 172.18.203.179
+    database: 0
+    port: 6379
+    password: 1EC4b2Iq
+    timeout: 60000
+    pool:
+      max-wait: -1
+      max-idle: 500
+      min-idle: 0

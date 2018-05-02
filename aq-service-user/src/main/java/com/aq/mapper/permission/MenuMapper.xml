@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aq.mapper.permission.MenuMapper">
+    <sql id="baseSelect">
+        SELECT
+        m.id,
+        m.menuName,
+        m.menuUrl,
+        m.parentId,
+        m.sequence,
+        m.icon,
+        m.type
+    </sql>
+
+    <!-- 根据角色id获取菜单 -->
+    <select id="getMenuByRoleIds" resultType="com.aq.facade.vo.permission.MenuVO">
+        SELECT
+        DISTINCT
+        m.id,
+        m.menuName,
+        m.menuUrl,
+        m.parentId,
+        m.icon
+        FROM
+        aq_permission_role_menu rm
+        INNER JOIN
+        aq_permission_menu m
+        ON
+        rm.menuId=m.id
+        WHERE
+        rm.roleId IN
+        <foreach item="item" index="index" collection="roleIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+
+        ORDER BY m.sequence
+    </select>
+
+
+    <!-- 获取所有菜单 -->
+    <select id="getAllMenu" resultType="com.aq.facade.vo.permission.MenuVO">
+        <include refid="baseSelect"/>
+        FROM
+        aq_permission_menu m
+    </select>
+
+    <!-- 获取所有菜单 -->
+    <select id="getAllBaseMenuByRoleId" resultType="com.aq.facade.vo.permission.MenuVO">
+        SELECT
+            m.id,
+            NULL btnId,
+            m.menuName,
+            m.parentId,
+            m.sequence,
+            m.type
+        FROM
+            aq_permission_role r
+        INNER JOIN aq_permission_role_menu_base b ON r.roleCode = b.roleCode
+        INNER JOIN aq_permission_menu m ON b.menuId = m.id
+        WHERE
+            r.id = #{roleId}
+        UNION ALL
+            SELECT
+                NULL id,
+                b.id btnId,
+                b.btnName menuName,
+                mbb.menuId parentId,
+                mbb.sequence,
+                NULL type
+            FROM
+                aq_permission_role r
+            INNER JOIN aq_permission_role_menu_base mb ON r.roleCode = mb.roleCode
+            INNER JOIN aq_permission_menu_btn_base mbb ON mb.menuId = mbb.menuId
+            INNER JOIN aq_permission_btn b ON mbb.btnId = b.id
+            WHERE
+                r.id = #{roleId}
+    </select>
+</mapper>

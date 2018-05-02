@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.WechatStrategyMapper">
+
+    <resultMap id="strategyWechatDetailVO" type="com.aq.facade.vo.StrategyWechatDetailVO">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="strategyName" property="strategyName" jdbcType="VARCHAR"/>
+        <result column="strategyDesc" property="strategyDesc" jdbcType="VARCHAR"/>
+        <collection property="strategyTradeRecordQueryVOList" column="{id=id,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.StrategyTradeRecordQueryVO"
+                    select="com.aq.mapper.StrategyMapper.listStrategyTradeRecordQueryVO"/>
+        <collection property="strategyBenchmarkQueryVOList" column="{id=id,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.StrategyBenchmarkQueryVO"
+                    select="com.aq.mapper.StrategyMapper.listStrategyBenchmarkQueryVO"/>
+        <collection property="strategyPositionVOList" column="{id=id,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.StrategyPositionVO"
+                    select="com.aq.mapper.StrategyMapper.listStrategyPositionVO"/>
+        <collection property="strategyPushQueryVOList" column="{purchaseState=purchaseState,id=id,isLimit=isLimit}"
+                    javaType="java.util.ArrayList" ofType="com.aq.facade.vo.StrategyPushQueryVO"
+                    select="com.aq.mapper.StrategyMapper.listStrategyPushQueryVO"/>
+    </resultMap>
+
+    <select id="getStrategyWechatDetailVO" parameterType="com.aq.facade.dto.StrategyDetailDTO"
+            resultMap="strategyWechatDetailVO">
+        SELECT
+        s.id,
+        s.strategyName,
+        s.strategyDesc,
+        1 purchaseState,
+        (CASE WHEN #{isLimit} is null then null else
+        'true' end) isLimit
+        FROM
+        aq_strategy s
+        where id = #{strategyId}
+        order by s.createTime desc
+    </select>
+
+    <select id="selectStrategyPushIds" parameterType="java.lang.Integer"
+            resultType="java.lang.String">
+              SELECT
+          IFNULL(c.openId,m.openId) openId
+        FROM
+            aq_strategy_purchase sp
+        LEFT JOIN aq_strategy_recommend sr ON sr.beRecommendedId = sp.purchaserId
+        AND sr.beRecommendedRoleType = sp.purchaserType
+        AND sr.strategyId = sp.strategyId
+        LEFT JOIN aq_customer c ON c.id = sp.purchaserId and sp.purchaserType=2
+        LEFT JOIN aq_manager m ON m.id = sp.purchaserId and sp.purchaserType=3
+        WHERE
+            DATEDIFF(expiryTime, NOW()) >= 0
+        AND sr.pushState = 0
+        AND sp.strategyId = #{strategyId}
+    </select>
+
+    <!-- 微信策略列表接口 -->
+    <select id="listWechatStrategyQueryVO" resultType="com.aq.facade.vo.WechatStrategyQueryVO"
+            parameterType="com.aq.facade.dto.WechatStrategyQueryDTO">
+
+SELECT ttt.indexTime,ttt.strategyId,ttt.recommendId,ttt.strategyName,ttt.expiryTime,ttt.cumulativeIncome,
+ttt.annualIncome,ttt.price,ttt.purchaseId,ttt.publisherName
+        FROM
+	    (SELECT
+			str.id,
+			str.indexTime,
+			sr.strategyId strategyId,
+			sr.recommendedId recommendId,
+			s.strategyName strategyName,
+			s.publisherName,
+			sp.expiryTime expiryTime,
+			str.cumulativeIncome cumulativeIncome,
+			str.annualIncome annualIncome,
+			sr.pushPrice price,
+			sp.id purchaseId
+		FROM
+			aq_customer c
+		LEFT JOIN aq_customer_manager cm ON cm.customerId = c.id
+		LEFT JOIN aq_strategy_recommend sr ON sr.beRecommendedId = cm.customerId
+		AND sr.recommendedId = cm.managerId
+		AND sr.beRecommendedRoleType = 2
+		LEFT JOIN aq_strategy_trade_record str ON str.strategyId = sr.strategyId
+		LEFT JOIN aq_strategy s ON s.id = sr.strategyId
+		AND sr.beRecommendedId = c.id
+		LEFT JOIN aq_strategy_purchase sp ON sp.managerId = cm.managerId
+		AND sp.purchaserId = c.id
+		AND sp.purchaserType = 2
+		AND sp.strategyId = s.id
+		WHERE
+			c.openId = #{openId}
+	    ) ttt
+		WHERE ttt.id in (SELECT MAX(id) from (SELECT
+			str.id,
+			str.indexTime,
+			sr.strategyId strategyId,
+			sr.recommendedId recommendId,
+			s.strategyName strategyName,
+			sp.expiryTime expiryTime,
+			str.cumulativeIncome cumulativeIncome,
+			str.annualIncome annualIncome,
+			sr.pushPrice price,
+			sp.id purchaseId
+		FROM
+			aq_customer c
+		LEFT JOIN aq_customer_manager cm ON cm.customerId = c.id
+		LEFT JOIN aq_strategy_recommend sr ON sr.beRecommendedId = cm.customerId
+		AND sr.recommendedId = cm.managerId
+		AND sr.beRecommendedRoleType = 2
+		LEFT JOIN aq_strategy_trade_record str ON str.strategyId = sr.strategyId
+		LEFT JOIN aq_strategy s ON s.id = sr.strategyId
+		AND sr.beRecommendedId = c.id
+		LEFT JOIN aq_strategy_purchase sp ON sp.managerId = cm.managerId
+		AND sp.purchaserId = c.id
+		AND sp.purchaserType = 2
+		AND sp.strategyId = s.id
+		WHERE
+			c.openId = #{openId}
+	    ) ta
+  GROUP BY ta.strategyId)
+		<if test="purchaseState != null and purchaseState == 0">
+			AND ttt.purchaseId is NOT NULL AND ttt.purchaseId != ''
+		</if>
+    </select>
+</mapper>

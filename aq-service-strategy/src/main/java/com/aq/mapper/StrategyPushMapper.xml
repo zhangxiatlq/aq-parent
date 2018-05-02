@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.StrategyPushMapper">
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.StrategyPush">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="strategyId" property="strategyId" jdbcType="INTEGER"/>
+        <result column="sharesCode" property="sharesCode" jdbcType="VARCHAR"/>
+        <result column="sharesName" property="sharesName" jdbcType="VARCHAR"/>
+        <result column="tradeTime" property="tradeTime" jdbcType="TIMESTAMP"/>
+        <result column="direction" property="direction" jdbcType="TINYINT"/>
+        <result column="pushDate" property="pushDate" jdbcType="TIMESTAMP"/>
+        <result column="tradeNumber" property="tradeNumber" jdbcType="INTEGER"/>
+        <result column="tradePrice" property="tradePrice" jdbcType="DECIMAL"/>
+        <result column="tradeTotalPrice" property="tradeTotalPrice" jdbcType="DECIMAL"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, strategyId, sharesCode, sharesName, tradeTime, direction
+        pushDate, tradeNumber, tradePrice, tradeTotalPrice
+    </sql>
+
+
+    <sql id="11">
+        update strategy_push
+        <set>
+            <if test="strategyId != null">
+                strategyId = #{strategyId,jdbcType=INTEGER},
+            </if>
+            <if test="sharesCode != null">
+                sharesCode = #{sharesCode,jdbcType=VARCHAR},
+            </if>
+            <if test="sharesName != null">
+                sharesName = #{sharesName,jdbcType=VARCHAR},
+            </if>
+            <if test="tradeTime != null">
+                tradeTime = #{tradeTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="direction != null">
+                direction = #{direction,jdbcType=TINYINT},
+            </if>
+            <if test="pushDate != null">
+                pushDate = #{pushDate,jdbcType=TIMESTAMP},
+            </if>
+            <if test="tradeNumber != null">
+                tradeNumber = #{tradeNumber,jdbcType=INTEGER},
+            </if>
+            <if test="tradePrice != null">
+                tradePrice = #{tradePrice,jdbcType=DECIMAL},
+            </if>
+            <if test="tradeTotalPrice != null">
+                tradeTotalPrice = #{tradeTotalPrice,jdbcType=DECIMAL},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </sql>
+
+</mapper>

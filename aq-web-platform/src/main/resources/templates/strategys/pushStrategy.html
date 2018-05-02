@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>推送策略</title>
+    <!--bootstrap-select  css文件-->
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/bootstrapselect/css/bootstrap.min.css}">
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/bootstrapselect/css/bootstrap-select.css}">
+    <!--主要css样式-->
+    <link rel="stylesheet" th:href="@{/static/css/models.css}">
+</head>
+<body>
+<!--筛选条件-->
+<div class="screen" style="padding-top: 10px;">
+    <form id="formID">
+        <table class="tableBox">
+            <tr>
+                <th>用户类型：</th>
+                <td>
+                    <select class="selectpicker" id="roleType">
+                        <option value="2" th:if="${roleType==2 || roleType==null}">客户</option>
+                        <option value="3" th:if="${roleType==3 || roleType==null}" selected>客户经理</option>
+                    </select>
+                </td>
+                <th>姓名：</th>
+                <td><input id="realName" type="text"></td>
+                <th>电话：</th>
+                <td><input id="telphone" type="text"></td>
+                <td>
+                    <input onclick="query();" type="button" value="查询">
+                    <input onclick="reseter();" type="button" value="重置">
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+<!--end 筛选条件-->
+<div class="wareBox tabScroll">
+    <table class="wareList" id="example"></table>
+</div>
+<div class="PopupBtn">
+    <input class="submit" onclick="pushStrategy()" value="推送已选中的" type="button">
+    <input class="cancel" onclick="layerCancel()" value="取消" type="button">
+</div>
+<script type="text/javascript" th:src="@{/static/js/jquery-1.11.1.min.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/index.js}"></script>
+<!--bootstrap-select-->
+<script type="text/javascript" th:src="@{/static/js/bootstrapselect/bootstrap.min.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/bootstrapselect/bootstrap-select.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/bootstrapselect/select.js}"></script>
+<!--分页-->
+<script type="text/javascript" th:src="@{/static/js/pages/jquery.dataTables.min.js}"></script>
+<!--弹窗-->
+<script type="text/javascript" th:src="@{/static/js/layer/layer.js}"></script>
+<script th:inline="javascript">
+    var tb;
+    var strategysId = [[${strategysId}]];
+    var checkIds = [];
+    $(function () {
+        //table数据列表
+        tb = $('#example').DataTable({
+            "bServerSide": true,
+            "sPaginationType": "full_numbers",
+            //"bJQueryUI": true,
+            "sDom": '<"">t<"F"ip>',
+            "autoWidth": false,  //自适应宽度
+            //"sAjaxSource": "${ctx}/api/user/list", //ajax调用接口
+            //<div class="btn-group" style="text-align:left;"><button type="button" class="btn btn-info dropdown-toggle"data-toggle="dropdown">操作 <span class="caret"></span></button>
+            "sAjaxSource": "/web/strategys/pageStrategysPushVO", //ajax调用接口
+            "aoColumnDefs": [{sDefaultContent: '', orderable: false, aTargets: ['_all']}],
+            "aoColumns": [
+                {
+                    "sWidth": "30px",
+                    "sTitle": "<input class='check-all'  type='checkbox'>",
+                    "mData": "pushIds",
+                    "mRender": function (pushIds, b, full) {
+                        var pushArray = pushIds.split(",");
+                        for (var i = 0; i < pushArray.length; i++) {
+                            if (checkIds.indexOf(pushArray[i]) === -1) {
+                                if (pushArray[i] !== null) {
+                                    checkIds.push(pushArray[i]);
+                                }
+                            }
+                        }
+                        return '<input ' + (("," + checkIds.join(",") + ",").indexOf("," + full.id + ",") !== -1 || ("," + pushIds + ",").indexOf("," + full.id + ",") !== -1 || $("input.check-all").is(":checked") ? "checked" : "") + ' class="ids" type="checkbox" value="' + full.id + '">'
+                    }
+                },
+                {"sTitle": "姓名", "mData": "realName"},
+                {"sTitle": "电话", "mData": "telphone"},
+                {
+                    "sTitle": "状态", "mData": "pushIds", "mRender": function (pushIds, b, full) {
+                        return ("," + pushIds + ",").indexOf("," + full.id + ",") !== -1 ? "已推荐" : "-"
+                    }
+                }
+            ],
+            "oLanguage": {
+                "sProcessing": "数据加载中······",
+                "sLengthMenu": "显示 _MENU_ 条记录",
+                "sZeroRecords": "没有您要搜索的内容！",
+                "sEmptyTable": "列表中无数据存在！",
+                "sInfo": "当前显示 _START_ 到 _END_ 条数据，共 _TOTAL_ 条数据",
+                "sInfoEmpty": "显示 0 到 0 条记录",
+                "sInfoFiltered": "数据列表中共  _MAX_ 条记录",
+                "oPaginate": {
+                    "sFirst": "首页",
+                    "sPrevious": "上一页",
+                    "sNext": "下一页",
+                    "sLast": "末页"
+                }
+            },
+            "fnServerData": function (sSource, aoData, fnCallback, oSettings) {
+                oSettings.jqXHR = $.ajax({
+                    "dataType": 'json',
+                    "type": "GET",
+                    "async": 'false',
+                    "url": sSource,
+                    "data": {
+                        'pageNum': (aoData[3].value / aoData[4].value) + 1,
+                        'pageSize': aoData[4].value,
+                        'realName': $('#realName').val(),
+                        'roleType': $('#roleType').val(),
+                        'telphone': $('#telphone').val(),
+                        'strategysId': strategysId
+                    },
+                    "success": fnCallback
+                });
+            }
+        });
+    });
+
+    //条件查询重新加载数据
+    function query() {
+        tb.draw();
+    }
+    //重置
+    function reseter() {
+        $("#formID")[0].reset();
+    }
+
+    function pushStrategy() {
+        $.post("/web/strategys/pushStrategys", {
+            strategysId: strategysId,
+            roleType: $('#roleType').val(),
+            userIds: checkIds.join(",") || "",
+            allChecked: $("input.check-all").is(":checked")
+        }, function (result) {
+            ajaxBack(result);
+        });
+    }
+
+    function ajaxBack(result) {
+        layer.alert(result.message, {icon: 1, btnAlign: 'c', closeBtn: 0});
+        if (result.success) {
+            setTimeout(function () {
+                window.location.reload();
+            }, 1500)
+        }
+    }
+
+    function layerCancel() {
+        var index = parent.layer.getFrameIndex(window.name);
+        parent.layer.close(index);
+    }
+
+    var $wareBox = $('.wareBox');
+    $wareBox.on('click', '.ids', function () {
+        var $input = $(this);
+        var val = $input.val();
+        checkIds = checkIds.filter(function (value) {
+            return value !== val
+        });
+        if ($input.is(":checked")) {
+            checkIds.push(val)
+        }
+    });
+
+    $wareBox.on('click', '.check-all', function () {
+        checkIds = [];
+    });
+</script>
+</body>
+</html>

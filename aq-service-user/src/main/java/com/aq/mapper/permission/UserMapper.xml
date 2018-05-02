@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.permission.UserMapper">
+
+    <!-- 基础查询条件-->
+    <sql id="baseCondition">
+        <trim prefix="where" prefixOverrides="and">
+            <if test="id!=null and id!=''">
+                and u.id =#{id}
+            </if>
+            <if test="userName!=null and userName!=''">
+                and u.userName =#{userName}
+            </if>
+            <if test="employeeID!=null and employeeID!=''">
+                and u.employeeID =#{employeeID}
+            </if>
+            <if test="telphone!=null and telphone!=''">
+                and u.telphone =#{telphone}
+            </if>
+            <if test="roleCode != null">
+                AND pr.roleCode = #{roleCode}
+            </if>
+            <if test="isable!=null">
+                and u.isable =#{isable}
+            </if>
+            and u.isDelete=2
+        </trim>
+    </sql>
+
+
+    <sql id="baseSql">
+      SELECT
+      apu.id,
+      apu.userName,
+      apu.employeeID,
+      apu.telphone,
+      apu.isable
+    </sql>
+
+
+    <select id="selectUserListByPage" parameterType="com.aq.facade.dto.permission.SelectUserDTO"
+            resultType="com.aq.facade.vo.permission.UserListVO">
+        SELECT
+          apu.id,
+          apu.userName,
+          apu.employeeID,
+          apu.telphone,
+          apu.isable,
+          (select COUNT(m.id) from aq_user_manager m WHERE m.userId = apu.id) managerNum,
+          apu.divideScale
+        FROM aq_permission_user apu
+        <where>
+            <if test="userName != null and userName != ''">
+                AND (apu.userName LIKE concat('%',#{userName},'%') or apu.employeeID LIKE concat('%',#{userName},'%')
+                or apu.telphone LIKE concat('%',#{userName},'%') )
+            </if>
+            <if test="isable != null">
+                AND apu.isable = #{isable}
+            </if>
+        </where>
+    </select>
+
+
+    <select id="getUserByCondition" parameterType="com.aq.facade.dto.permission.UserDTO"
+            resultType="com.aq.facade.vo.permission.UserVO">
+        SELECT
+        u.id,
+        u.userName,
+        u.telphone,
+        u.employeeID,
+        u.password,
+        u.loginTime,
+        u.createTime,
+        u.isable
+        FROM
+        aq_permission_user u
+        LEFT JOIN aq_permission_user_role ur on ur.userId=u.id
+        LEFT JOIN aq_permission_role pr on pr.id=ur.roleId
+        <include refid="baseCondition"/>
+    </select>
+</mapper>

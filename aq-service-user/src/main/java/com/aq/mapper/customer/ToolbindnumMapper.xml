@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.customer.ToolbindnumMapper" >
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.customer.Toolbindnum" >
+        <id column="id" property="id" jdbcType="INTEGER" />
+        <result column="toolCode" property="toolCode" jdbcType="VARCHAR" />
+        <result column="customerId" property="customerId" jdbcType="INTEGER" />
+        <result column="num" property="num" jdbcType="INTEGER" />
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP" />
+        <result column="createrId" property="createrId" jdbcType="INTEGER" />
+        <result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+        <result column="updaterId" property="updaterId" jdbcType="INTEGER" />
+    </resultMap>
+    
+    <!-- 修改客户工具最大推荐数据 -->
+    <update id="updateToolBindNumByCusId">
+    	UPDATE aq_toolbindnum
+		SET num = #{num},
+		 updateTime = now(),
+		 updaterId = 0
+		WHERE
+			customerId in 
+		<foreach collection="list" index="index" item="item" open="(" separator="," close=")">
+             #{item}       
+       </foreach>
+    </update>
+</mapper>

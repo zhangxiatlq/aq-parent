@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.aq.mapper.AdviserRecommendMapper">
+
+    <resultMap id="BaseResultMap" type="com.aq.facade.entity.AdviserRecommend">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="adviserId" property="adviserId" jdbcType="INTEGER"/>
+        <result column="recommendedId" property="recommendedId" jdbcType="INTEGER"/>
+        <result column="beRecommendedId" property="beRecommendedId" jdbcType="INTEGER"/>
+        <result column="pushState" property="pushState" jdbcType="TINYINT"/>
+        <result column="pushDate" property="pushDate" jdbcType="TIMESTAMP"/>
+        <result column="pushPrice" property="pushPrice" jdbcType="DECIMAL"/>
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="updateTime" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="isDelete" property="isDelete" jdbcType="TINYINT"/>
+        <result column="isBuy" property="isBuy" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, adviserId, recommendedId, beRecommendedId, pushState, pushDate, pushPrice, createTime,
+        updateTime, isDelete, isBuy
+    </sql>
+
+    <sql id="11">
+        update aq_adviser_recommend
+        <set>
+            <if test="adviserId != null">
+                adviserId = #{adviserId,jdbcType=INTEGER},
+            </if>
+            <if test="recommendedId != null">
+                recommendedId = #{recommendedId,jdbcType=INTEGER},
+            </if>
+            <if test="beRecommendedId != null">
+                beRecommendedId = #{beRecommendedId,jdbcType=INTEGER},
+            </if>
+            <if test="pushState != null">
+                pushState = #{pushState,jdbcType=TINYINT},
+            </if>
+            <if test="pushDate != null">
+                pushDate = #{pushDate,jdbcType=TIMESTAMP},
+            </if>
+            <if test="pushPrice != null">
+                pushPrice = #{pushPrice,jdbcType=DECIMAL},
+            </if>
+            <if test="createTime != null">
+                createTime = #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="updateTime != null">
+                updateTime = #{updateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="isDelete != null">
+                isDelete = #{isDelete,jdbcType=TINYINT},
+            </if>
+            <if test="isBuy != null">
+                isBuy = #{isBuy,jdbcType=TINYINT},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </sql>
+
+    <!-- 客户经理推荐投顾时获取客户信息列表 -->
+    <select id="getAdviserCustomers" parameterType="com.aq.facade.dto.AdviserCustomListDTO"
+            resultType="com.aq.facade.vo.AdviserCustomListVO">
+        SELECT tt.id,tt.customerId,tt.groupName,tt.custom,IF(tt.id is null,1,if(tt.isDelete = 2,0,1)) as sent,
+        IF(tt.id is null,1,tt.pushPrice) as pushPrice,tt.roleCode AS beRecommendedRoleType,tt.pushState,tt.attentionFlag
+        FROM
+        (SELECT * from
+        (SELECT
+        acm.managerId,acm.customerId,ag.groupName,CONCAT(ac.realName,RIGHT(ac.telphone,4)) AS custom,2 AS
+        roleCode,if(ac.isCancelAttention = 2,0,1) AS attentionFlag
+        FROM
+        aq_customer_manager acm
+        LEFT JOIN aq_customer ac ON ac.id = acm.customerId
+        LEFT JOIN aq_group ag ON acm.groupId = ag.id
+        WHERE
+        1 = 1 AND ac.openId != ''
+        <if test="managerId != null and managerId != ''">
+            AND acm.managerId = #{managerId}
+        </if>
+        <if test="groupId != null and groupId != ''">
+            AND ag.id = #{groupId}
+        </if>
+        <if test="customMessage != null and customMessage != ''">
+            AND (ac.realName like CONCAT('%', #{customMessage}, '%') or ac.telphone like CONCAT('%', #{customMessage},
+            '%') )
+        </if>
+        UNION
+        SELECT am.id,am.id,'--',CONCAT(am.realName,RIGHT(am.telphone,4)) AS custom,3 as roleCode,0 AS attentionFlag from
+        aq_manager am where am.id = #{managerId}
+        ) t_customer_manager
+        LEFT JOIN (SELECT
+        aa.adviserName,aa.adviserDesc,aar.beRecommendedRoleType,aar.beRecommendedId,aar.isDelete,aar.id,aar.pushPrice,aar.pushState
+        from aq_adviser aa
+        LEFT JOIN aq_adviser_recommend aar ON aar.adviserId = aa.id
+        where aar.recommendedId = #{managerId} and aar.adviserId = #{adviserId}) t_adviser ON
+        t_customer_manager.customerId = t_adviser.beRecommendedId AND t_adviser.beRecommendedRoleType =
+        t_customer_manager.roleCode
+        ORDER BY t_customer_manager.roleCode DESC) tt
+    </select>
+
+    <!-- 批量更新推荐投顾给客户 -->
+    <update id="updateAdviserRecommendBatch" parameterType="java.util.List">
+        update aq_adviser_recommend
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="pushPrice =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    when id=#{item.id} then #{item.pushPrice}
+                </foreach>
+            </trim>
+            <trim prefix="updateTime =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    when id=#{item.id} then SYSDATE()
+                </foreach>
+            </trim>
+            <trim prefix="isDelete =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    when id=#{item.id} then #{item.isDelete}
+                </foreach>
+            </trim>
+        </trim>
+        where id in
+        <foreach collection="list" index="index" item="item" separator="," open="(" close=")">
+            #{item.id,jdbcType=INTEGER}
+        </foreach>
+    </update>
+    <!-- 查询推荐投顾给客户列表 -->
+    <select id="recommendAdviserList" parameterType="com.aq.facade.dto.AdviserQueryRecommendDTO"
+            resultType="com.aq.facade.vo.AdviserRecommendVO">
+    SELECT
+	aar.id,
+	aar.createTime pushDate,
+	aar.pushPrice pushPrice,
+	CASE aar.beRecommendedRoleType
+    WHEN 2 THEN
+	(SELECT
+		CONCAT(
+			ac.realName,
+			RIGHT (ac.telphone, 4)
+		) AS custom
+	FROM
+		aq_customer ac
+	WHERE
+		ac.id = aar.beRecommendedId)
+	WHEN 3 THEN
+		(SELECT
+			CONCAT(
+				am.realName,
+				RIGHT (am.telphone, 4)
+			) AS custom
+		FROM
+			aq_manager am
+		WHERE
+			am.id = aar.beRecommendedId)
+		END beRecommendedName
+	FROM
+		aq_adviser_recommend aar
+	WHERE
+		aar.isDelete = 2 AND aar.recommendedId = #{recommendedId}
+	ORDER BY aar.beRecommendedRoleType DESC
+    </select>
+
+
+    <select id="selectManagerOpenId" resultType="java.lang.String">
+        SELECT
+            m.openId
+        FROM
+            aq_adviser a
+        LEFT JOIN aq_adviser_recommend ar ON a.createrId = ar.recommendedId
+        LEFT JOIN aq_manager m ON ar.beRecommendedId = m.id
+        WHERE
+            a.id = #{adviserId}
+        AND ar.isDelete = 2
+        AND ar.pushState = 0
+        AND ar.beRecommendedRoleType = 3
+        AND m.openId IS NOT NULL
+    </select>
+</mapper>

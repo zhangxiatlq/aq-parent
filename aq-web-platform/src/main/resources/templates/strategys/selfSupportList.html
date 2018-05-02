@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <title>自营策略</title>
+    <!--日期  css文件-->
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/datepicker/css/bootstrap-datepicker.css}">
+    <!--弹窗 css文件-->
+    <link rel="stylesheet" type="text/css" th:href="@{/static/js/layer/layer.css}">
+    <!--主要css样式-->
+    <link rel="stylesheet" th:href="@{/static/css/models.css}">
+</head>
+<body>
+<div class="MainContent">
+    <!--主体内容-->
+    <div class="MainCont">
+        <div class="snbBtn">
+            <shiro:hasPermission name="selfStrategyAdd">
+                <button class="columnBtn js_addStrategy" value="添加策略">添加策略</button>
+            </shiro:hasPermission>
+        </div>
+        <!--筛选条件-->
+        <div class="screen">
+            <form id="formID">
+                <table class="tableBox">
+                    <tr>
+                        <th>策略名称：</th>
+                        <td><input id="strategyName" type="text"></td>
+                        <th>添加人工号：</th>
+                        <td><input id="employeeID" type="text"></td>
+                        <th>时间：</th>
+                        <td colspan="2">
+                            <p class="dayBox">
+                                <input class="start_rise date start" id="startDate" type="text">&nbsp;-&nbsp;
+                                <input class="start_rise date end" id="endDate" type="text">
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="6">
+                            <shiro:hasPermission name="selfStrategyQuery">
+                                <input onclick="query();" type="button" value="查询">
+                            </shiro:hasPermission>
+                            <input onclick="reseter();" type="button" value="重置">
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+        <!--end 筛选条件-->
+        <!--商品列表-->
+        <div class="wareBox tabScroll">
+            <table class="wareList" id="example"></table>
+        </div>
+        <!--end 商品列表-->
+    </div>
+    <!--end 主体内容-->
+</div>
+<!--添加策略弹窗-->
+<div class="PopupBox" id="addStrategyBox" data-layer-h="310px" data-layer-title="添加策略" data-layer-w="500px">
+    <!--内容-->
+    <div class="PopupCon">
+        <form class="form-inline" id="add" enctype="multipart/form-data">
+            <ul class="addList">
+                <li>
+                    <label for="">
+                        <span class="require">*</span>策略名称：
+                    </label>
+                    <input class="memberTxt validate[required]" name="strategyName" type="text">
+                </li>
+                <li>
+                    <label for="">
+                        <span class="require">*</span>策略价格：
+                    </label>
+                    <input class="memberTxt validate[required,custom[number]]" name="price" type="text">
+                </li>
+                <li class="addList">
+                    <label for="">
+                        <span class="require">*</span>策略文件：
+                    </label>
+                    <input class="memberTxt fileTxt ph_disabled " type="text" disabled="disabled"
+                           placeholder="请选择文件">
+                    <input class="fileImport" name="apk" type="file">
+                </li>
+            </ul>
+        </form>
+    </div>
+    <!--end 内容-->
+</div>
+<!--添加策略弹窗-->
+<div class="PopupBox" id="editStrategyBox" data-layer-h="260px" data-layer-title="修改策略" data-layer-w="500px">
+    <!--内容-->
+    <div class="PopupCon">
+        <form class="form-inline" id="edit">
+            <ul class="addList">
+                <li>
+                    <label for="">
+                        <span class="require">*</span>策略作者：
+                    </label>
+                    <input class="memberTxt validate[required]" name="publisherName" type="text">
+                </li>
+                <li>
+                    <label for="">
+                        <span class="require">*</span>策略名称：
+                    </label>
+                    <input class="memberTxt validate[required]" name="strategyName" type="text">
+                </li>
+                <li>
+                    <label for="">
+                        <span class="require">*</span>策略价格：
+                    </label>
+                    <input class="memberTxt validate[required,custom[number]]" name="price" type="text">
+                </li>
+            </ul>
+        </form>
+    </div>
+    <!--end 内容-->
+</div>
+<!--end 添加策略弹窗-->
+<!--下载策略文件弹窗-->
+<div class="PopupBox" id="strategyFileBox">
+    <!--内容-->
+    <div class="PopupCon">
+        <form class="form-inline" id="formID_a">
+            <ul class="addList">
+                <li>
+                    <label for=""><span class="require">*</span>策略名称：</label>
+                    <input class="memberTxt validate[required]" type="text" placeholder="策略名称">
+                </li>
+            </ul>
+        </form>
+    </div>
+    <!--end 内容-->
+</div>
+<!--end 下载策略文件弹窗-->
+<script type="text/javascript" th:src="@{/static/js/jquery-1.11.1.min.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/index.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/common/jquery.form.js}"></script>
+<!--日期控件-->
+<script type="text/javascript" th:src="@{/static/js/datepicker/bootstrap-datepicker.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/datepicker/jquery.timepicker.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/datepicker/jquery.datepair.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/datepicker/datepicker.js}"></script>
+<!--验证-->
+<script type="text/javascript" th:src="@{/static/js/validat/jquery.validationEngine-zh_CN.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/validat/jquery.validationEngine.js}"></script>
+<!--分页-->
+<script type="text/javascript" th:src="@{/static/js/pages/jquery.dataTables.min.js}"></script>
+<!--弹窗-->
+<script type="text/javascript" th:src="@{/static/js/layer/layer.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/common/htmlHelper.js}"></script>
+<!--layui-->
+<script th:inline="javascript">
+    var tb;
+    $(function () {
+        //验证
+        $("#formID").validationEngine({
+            addPromptClass: 'formError-text',
+            showArrow: false,
+            promptPosition: 'bottomLeft:10 0'
+        });
+        //添加策略
+        $('.snbBtn').on('click', '.js_addStrategy', function () {
+            layer.open({
+                type: 1,
+                title: '添加策略',
+                closeBtn: 1,
+                area: ['500px', '310px'],
+                //maxmin: true,
+                btn: ['保存', '取消'],
+                btnAlign: 'c',
+                content: $('#addStrategyBox'),
+                yes: function () {
+                    var $form = $("#add");
+                    //参数通过jquery validate
+                    if (!$form.validationEngine("validate")) {
+                        return false;
+                    }
+
+                    $form.ajaxSubmit({
+                        url: '/web/strategys/addStrategys',
+                        type: 'POST',
+                        dataType: 'json',
+                        success: function (result) {
+                            layer.alert(result.message);
+                            if (result.success) {
+                                setTimeout(function () {
+                                    window.location.reload();
+                                }, 1500)
+                            }
+                        },
+                        beforeSend: function (XHR) {
+                            //错误方法增强处理
+                            if (layer) {
+                                index = layer.load(0, {shade: 0.05});
+                            } else {
+                                alert("出错了,请联系管理员!");
+                            }
+                        },
+                        complete: function (XHR, TS) {
+                            //请求完成后回调函数 (请求成功或失败之后均调用)。
+                            layer.close(index);
+                        }
+                    });
+                }
+            });
+        });
+
+        //选择文件
+        $('.addList').on('change', '.fileImport', function () {
+            var fileUrl = $(this).val();
+            if (fileUrl.toString() !== '') {
+                var reg = /^.*\.(?:py)$/i;    //文件名可以带空格
+                if (!reg.test(fileUrl.toString())) {   //校验不通过
+                    alert("请上传py格式的文件!");
+                    return;
+                }
+            }
+            $('.fileTxt').val(fileUrl);
+        });
+        //table数据列表
+        tb = $('#example').DataTable({
+            "bServerSide": true,
+            "sPaginationType": "full_numbers",
+            //"bJQueryUI": true,
+            "sDom": '<"">t<"F"ip>',
+            "autoWidth": false,  //自适应宽度
+            //"sAjaxSource": "${ctx}/api/user/list", //ajax调用接口
+            //<div class="btn-group" style="text-align:left;"><button type="button" class="btn btn-info dropdown-toggle"data-toggle="dropdown">操作 <span class="caret"></span></button>
+            "sAjaxSource": "/web/strategys/pageStrategysSelfSupportQueryVO", //ajax调用接口
+            "aoColumnDefs": [{sDefaultContent: '', orderable: false, aTargets: ['_all']}],
+            "aoColumns": [
+//                /*{ "sWidth": "30px","sTitle" : "<input class= \"check-all\" name=\"\" type=\"checkbox\">", "mData": "id","mRender": function(){
+//                    return '<input class="ids" name="" type="checkbox">';
+//                }},*/
+                {"sWidth": "50px", "sTitle": "序号", "mData": "id"},
+                {"sTitle": "策略id", "mData": "id"},
+                {"sTitle": "策略名称", "mData": "strategyName"},
+                {"sTitle": "策略价格", "mData": "price"},
+                {"sTitle": "添加人名称", "mData": "userName"},
+                {"sTitle": "添加人工号", "mData": "employeeID"},
+                {"sTitle": "添加时间", "mData": "createTime"},
+                {"sTitle": "策略作者", "mData": "publisherName"},
+                {"sTitle": "推荐对象", "mData": "pushUser"},
+                {
+                    "sWidth": "110px",
+                    "sTitle": "操作",
+                    "mData": "id",
+                    "sClass": "ph_tableShow",
+                    "mRender": function (id, type, full) {
+                        var text = '<div class="operateBox"><input class="operate" name="" type="button" value="操作选项">';
+                        text += '<ul class="operateList hide" role="menu">';
+                        if ([[${session.selfStrategyDel}]]) {
+                            text += '<li><a class="Js_delete" href="javascript:void(0);" onclick="del(' + id + ')">删除</a></li>';
+                        }
+                        text += '<li><a class="Js_delete" href="javascript:void(0);" onclick="edit(' + id + ')">修改</a></li>';
+                        if ([[${session.selfStrategyPush}]]) {
+                            text += '<li><a href="javascript:void(0);" onclick="pushStrategy(\'' + full.id + '\')">推荐策略</a></li>';
+                        }
+                        text += '<li><a target="_blank" href="/web/strategys/download?fileName=' + full.fileName + '" >策略文件</a></li>';
+                        text += '</ul></div>';
+                        return text;
+                    }
+                }
+            ],
+            "oLanguage": {
+                "sProcessing": "数据加载中······",
+                "sLengthMenu": "显示 _MENU_ 条记录",
+                "sZeroRecords": "没有您要搜索的内容！",
+                "sEmptyTable": "列表中无数据存在！",
+                "sInfo": "当前显示 _START_ 到 _END_ 条数据，共 _TOTAL_ 条数据",
+                "sInfoEmpty": "显示 0 到 0 条记录",
+                "sInfoFiltered": "数据列表中共  _MAX_ 条记录",
+                "oPaginate": {
+                    "sFirst": "首页",
+                    "sPrevious": "上一页",
+                    "sNext": "下一页",
+                    "sLast": "末页"
+                }
+            },
+            "fnServerData": function (sSource, aoData, fnCallback, oSettings) {
+                oSettings.jqXHR = $.ajax({
+                    "dataType": 'json',
+                    "type": "GET",
+                    "async": 'false',
+                    "url": sSource,
+                    "data": {
+                        'pageNum': (aoData[3].value / aoData[4].value) + 1,
+                        'pageSize': aoData[4].value,
+                        'strategyName': $('#strategyName').val(),
+                        'employeeID': $('#employeeID').val(),
+                        'startDate': $('#startDate').val(),
+                        'endDate': $('#endDate').val()
+                    },
+                    "success": fnCallback
+                });
+            },
+            "fnDrawCallback": function () {
+                var api = this.api();
+                var startIndex = api.context[0]._iDisplayStart;//获取到本页开始的条数
+                api.column(0).nodes().each(function (cell, i) {
+                    cell.innerHTML = startIndex + i + 1;
+                });
+            }
+        });
+    });
+
+    function pushStrategy(strategysId) {
+        layer.open({
+            type: 2,
+            title: '推荐策略',
+            closeBtn: 1,
+            area: ['900px', '620px'],
+            btnAlign: 'c',
+            shade: .3,
+            content: '/web/strategys/pushStrategy?strategysId=' + strategysId
+        });
+    }
+
+
+    function edit(id) {
+        $.get("/web/strategys/getStrategys?id=" + id, function (result) {
+            if (result.success) {
+                var $editStrategyBox = $("#editStrategyBox");
+                $("input[name='strategyName']", $editStrategyBox).val(result.data.strategyName);
+                $("input[name='publisherName']", $editStrategyBox).val(result.data.publisherName);
+                $("input[name='price']", $editStrategyBox).val(result.data.price);
+                layer.open({
+                    type: 1,
+                    title: '修改策略',
+                    closeBtn: 1,
+                    area: ['500px', '300px'],
+                    //maxmin: true,
+                    btn: ['修改', '取消'],
+                    btnAlign: 'c',
+                    content: $editStrategyBox,
+                    yes: function () {
+                        var $form = $("#edit");
+                        //参数通过jquery validate
+                        if (!$form.validationEngine("validate")) {
+                            return false;
+                        }
+
+                        $form.ajaxSubmit({
+                            url: '/web/strategys/editStrategys?id=' + id,
+                            type: 'POST',
+                            dataType: 'json',
+                            success: function (result) {
+                                layer.alert(result.message);
+                                if (result.success) {
+                                    setTimeout(function () {
+                                        window.location.reload();
+                                    }, 1500)
+                                }
+                            },
+                        });
+                    }
+                });
+            }
+        })
+    }
+
+    function del(id) {
+        layer.confirm('确定此操作吗？', {
+            title: '删除',
+            icon: 3,
+            btnAlign: 'c',
+            closeBtn: 0
+        }, function () {
+            $.post("/web/strategys/delStrategys", {id: id}, function (result) {
+                layer.alert(result.message, {icon: 1, btnAlign: 'c', closeBtn: 0});
+                if (result.success) {
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 1500)
+                }
+            })
+        });
+    }
+
+    //条件查询重新加载数据
+    function query() {
+        tb.draw();
+    }
+
+    //重置
+    function reseter() {
+        $("#formID")[0].reset();
+    }
+
+</script>
+</body>
+</html>
